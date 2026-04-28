@@ -1,0 +1,309 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        /* Soft UI Color System */
+        --background: 220 20% 97%;
+        --background-gradient-from: 220 20% 96%;
+        --background-gradient-to: 220 15% 99%;
+        --foreground: 222 47% 11%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 222 47% 11%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 222 47% 11%;
+
+        /* Royal Blue Primary */
+        --primary: 217 91% 60%;
+        --primary-foreground: 0 0% 100%;
+        --primary-glow: 217 91% 70%;
+
+        /* Soft Secondary */
+        --secondary: 220 14% 96%;
+        --secondary-foreground: 222 47% 11%;
+
+        /* Muted Tones */
+        --muted: 220 14% 96%;
+        --muted-foreground: 220 9% 46%;
+
+        /* Teal Accent */
+        --accent: 173 58% 39%;
+        --accent-foreground: 0 0% 20%;
+
+        /* Success Green */
+        --success: 142 71% 45%;
+        --success-foreground: 0 0% 100%;
+
+        /* Warning Orange */
+        --warning: 32 95% 55%;
+        --warning-foreground: 0 0% 100%;
+
+        /* Destructive Red */
+        --destructive: 0 72% 51%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 220 13% 91%;
+        --input: 220 13% 91%;
+        --ring: 217 91% 60%;
+
+        --radius: 0.75rem;
+
+        /* Neumorphic Shadows */
+        --shadow-soft: 0 4px 20px -2px hsl(220 20% 80% / 0.5);
+        --shadow-card:
+            0 8px 32px -4px hsl(220 20% 70% / 0.25),
+            0 2px 8px -2px hsl(220 20% 60% / 0.1);
+        --shadow-elevated:
+            0 12px 40px -8px hsl(220 20% 60% / 0.3),
+            0 4px 12px -4px hsl(220 20% 50% / 0.15);
+        --shadow-glow: 0 0 24px -4px hsl(217 91% 60% / 0.4);
+        --shadow-success-glow: 0 0 20px -4px hsl(142 71% 45% / 0.4);
+
+        /* Sidebar */
+        --sidebar-background: 222 47% 11%;
+        --sidebar-foreground: 220 14% 96%;
+        --sidebar-primary: 217 91% 60%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 222 40% 18%;
+        --sidebar-accent-foreground: 220 14% 96%;
+        --sidebar-border: 222 30% 20%;
+        --sidebar-ring: 217 91% 60%;
+    }
+
+    .dark {
+        --background: 222 47% 8%;
+        --background-gradient-from: 222 47% 7%;
+        --background-gradient-to: 222 47% 10%;
+        --foreground: 220 14% 96%;
+
+        --card: 222 40% 12%;
+        --card-foreground: 220 14% 96%;
+
+        --popover: 222 40% 12%;
+        --popover-foreground: 220 14% 96%;
+
+        --primary: 217 91% 60%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 222 30% 18%;
+        --secondary-foreground: 220 14% 96%;
+
+        --muted: 222 30% 18%;
+        --muted-foreground: 220 9% 60%;
+
+        --accent: 173 58% 39%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 62% 45%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 222 30% 20%;
+        --input: 222 30% 20%;
+        --ring: 217 91% 60%;
+
+        --shadow-soft: 0 4px 20px -2px hsl(222 47% 5% / 0.5);
+        --shadow-card: 0 8px 32px -4px hsl(222 47% 5% / 0.4);
+        --shadow-elevated: 0 12px 40px -8px hsl(222 47% 5% / 0.5);
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    html {
+        font-family: 'Inter', sans-serif;
+    }
+
+    body {
+        @apply bg-gradient-to-br from-background-gradient-from to-background-gradient-to text-foreground min-h-screen;
+        font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    }
+}
+
+@layer components {
+    /* Neumorphic Card */
+    .card-neumorphic {
+        @apply bg-card rounded-2xl border border-border/50;
+        box-shadow: var(--shadow-card);
+    }
+
+    .card-neumorphic-elevated {
+        @apply bg-card rounded-2xl border border-border/30;
+        box-shadow: var(--shadow-elevated);
+    }
+
+    /* Floating Label Input */
+    .floating-input-wrapper {
+        @apply relative;
+    }
+
+    .floating-input {
+        @apply w-full px-4 py-3 pt-6 bg-secondary/50 border border-border rounded-xl text-foreground transition-all duration-200;
+        @apply focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:bg-card;
+    }
+
+    .floating-label {
+        @apply absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-all duration-200 pointer-events-none;
+    }
+
+    .floating-input:focus ~ .floating-label,
+    .floating-input:not(:placeholder-shown) ~ .floating-label,
+    .floating-input.has-value ~ .floating-label {
+        @apply text-xs top-3 translate-y-0 text-primary font-medium;
+    }
+
+    /* Primary Button with Glow */
+    .btn-primary-glow {
+        @apply bg-gradient-to-r from-primary to-primary-glow text-primary-foreground font-semibold rounded-xl px-6 py-3;
+        @apply transition-all duration-300 ease-out;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .btn-primary-glow:hover {
+        @apply scale-[1.02];
+        box-shadow: 0 0 32px -4px hsl(217 91% 60% / 0.5);
+    }
+
+    .btn-primary-glow:active {
+        @apply scale-[0.98];
+    }
+
+    .btn-primary-glow:disabled {
+        @apply opacity-60 cursor-not-allowed scale-100;
+        box-shadow: none;
+    }
+
+    /* Danger Button with Glow */
+    .btn-danger-glow {
+        @apply bg-gradient-to-r from-destructive to-[hsl(0,72%,61%)] text-destructive-foreground font-semibold rounded-xl px-6 py-3;
+        @apply transition-all duration-300 ease-out;
+        box-shadow: 0 0 24px -4px hsl(0 72% 51% / 0.4);
+    }
+
+    .btn-danger-glow:hover {
+        @apply scale-[1.02];
+        box-shadow: 0 0 32px -4px hsl(0 72% 51% / 0.5);
+    }
+
+    .btn-danger-glow:active {
+        @apply scale-[0.98];
+    }
+
+    .btn-danger-glow:disabled {
+        @apply opacity-60 cursor-not-allowed scale-100;
+        box-shadow: none;
+    }
+
+    /* Success Button */
+    .btn-success-glow {
+        @apply bg-gradient-to-r from-success to-[hsl(142,71%,55%)] text-success-foreground font-semibold rounded-xl px-6 py-3;
+        @apply transition-all duration-300 ease-out;
+        box-shadow: var(--shadow-success-glow);
+    }
+
+    .btn-success-glow:hover {
+        @apply scale-[1.02];
+        box-shadow: 0 0 28px -4px hsl(142 71% 45% / 0.5);
+    }
+
+    /* Ghost Button */
+    .btn-ghost {
+        @apply bg-transparent border-2 border-warning text-warning font-semibold rounded-xl px-6 py-3;
+        @apply transition-all duration-200 hover:bg-warning/10;
+    }
+
+    /* Badge Styles */
+    .badge-petrol {
+        @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+        @apply bg-success/15 text-success border border-success/20;
+    }
+
+    .badge-diesel {
+        @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+        @apply bg-warning/15 text-warning border border-warning/20;
+    }
+
+    /* Data Grid Row Hover */
+    .grid-row-hover {
+        @apply transition-colors duration-150 hover:bg-primary/5;
+    }
+
+    /* Hero Metric */
+    .hero-metric {
+        @apply text-3xl font-bold text-primary;
+    }
+
+    /* Footer Branding */
+    .footer-brand {
+        @apply text-sm text-muted-foreground/60 text-center py-4;
+    }
+
+    /* Animate entrance */
+    @keyframes card-entrance {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .animate-card-entrance {
+        animation: card-entrance 0.5s ease-out forwards;
+    }
+
+    @keyframes fade-slide-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-slide-up {
+        animation: fade-slide-up 0.4s ease-out forwards;
+    }
+
+    /* Stagger children animation */
+    .stagger-children > * {
+        opacity: 0;
+        animation: fade-slide-up 0.4s ease-out forwards;
+    }
+
+    .stagger-children > *:nth-child(1) {
+        animation-delay: 0.05s;
+    }
+    .stagger-children > *:nth-child(2) {
+        animation-delay: 0.1s;
+    }
+    .stagger-children > *:nth-child(3) {
+        animation-delay: 0.15s;
+    }
+    .stagger-children > *:nth-child(4) {
+        animation-delay: 0.2s;
+    }
+    .stagger-children > *:nth-child(5) {
+        animation-delay: 0.25s;
+    }
+    .stagger-children > *:nth-child(6) {
+        animation-delay: 0.3s;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+}
