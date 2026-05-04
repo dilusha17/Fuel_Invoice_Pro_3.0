@@ -163,7 +163,7 @@ Route::middleware(['auth'])->group(function () {
     // API Routes for Invoice Summary
     Route::prefix('api/invoice-summary')->group(function () {
         Route::get('/search', [InvoiceSummaryController::class, 'search'])->name('api.invoice-summary.search');
-        Route::get('/print', [InvoiceSummaryController::class, 'print'])->name('api.invoice-summary.print');
+        Route::get('/export-csv', [InvoiceSummaryController::class, 'exportCsv'])->name('api.invoice-summary.export-csv');
     });
 
     // API Routes for Monthly Sale

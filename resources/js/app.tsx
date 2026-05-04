@@ -24,7 +24,7 @@ createInertiaApp({
             return mod.default;
         }
 
-        const mod = await importer() as { default: unknown };
+        const mod = await importer() as { default: any };
         const Page = mod.default;
 
         if (!Page.layout) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head } from '@inertiajs/react';
-import { Search, Printer, FileX, Loader2 } from 'lucide-react';
+import { Search, Download, FileX, Loader2 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import { useToast } from '@/hooks/use-toast';
@@ -18,13 +18,14 @@ interface PageProps {
 
 interface Invoice {
     id: number;
+    serial_no: number;
     invoice_date: string;
     tax_invoice_no: string;
-    client_name: string;
-    payment_method_name: string;
+    tin: string;
+    purchaser_name: string;
+    description: string;
     subtotal: number;
     vat_amount: number;
-    total_amount: number;
 }
 
 interface InvoiceTotals {
@@ -154,7 +155,7 @@ export default function InvoiceSummary({ clients, paymentMethods }: PageProps) {
         return pages;
     };
 
-    const handlePrint = () => {
+    const handleExportCsv = () => {
         if (!filters.fromDate || !filters.toDate) return;
 
         const queryParams = new URLSearchParams({
@@ -164,7 +165,7 @@ export default function InvoiceSummary({ clients, paymentMethods }: PageProps) {
             payment_method_id: filters.paymentMethodId || '',
         });
 
-        window.open(`/api/invoice-summary/print?${queryParams}`, '_blank');
+        window.open(`/api/invoice-summary/export-csv?${queryParams}`, '_blank');
     };
 
     // Add "All Clients" and "All Methods" option to the list
@@ -222,11 +223,11 @@ export default function InvoiceSummary({ clients, paymentMethods }: PageProps) {
                      {hasSearched && invoices.length > 0 && (
                         <button
                             type="button"
-                            onClick={handlePrint}
+                            onClick={handleExportCsv}
                             className="btn-success-glow flex items-center gap-2"
                         >
-                            <Printer className="h-5 w-5" />
-                            Print Summary
+                            <Download className="h-5 w-5" />
+                            Download CSV
                         </button>
                     )}
                     <button
@@ -264,32 +265,36 @@ export default function InvoiceSummary({ clients, paymentMethods }: PageProps) {
                                 <table className="w-full text-sm text-left">
                                     <thead className="text-xs uppercase bg-muted/50 text-muted-foreground border-b border-border">
                                         <tr>
-                                            <th className="px-6 py-3 font-semibold">Date</th>
-                                            <th className="px-6 py-3 font-semibold">Invoice No</th>
-                                            <th className="px-6 py-3 font-semibold">Payment Method</th>
-                                            <th className="px-6 py-3 font-semibold text-right">Net Value</th>
-                                            <th className="px-6 py-3 font-semibold text-right">VAT</th>
-                                            <th className="px-6 py-3 font-semibold text-right">Total</th>
+                                            <th className="px-4 py-3 font-semibold text-center w-12">#</th>
+                                            <th className="px-4 py-3 font-semibold">Invoice Date</th>
+                                            <th className="px-4 py-3 font-semibold">Tax Invoice No</th>
+                                            <th className="px-4 py-3 font-semibold">Purchaser's TIN</th>
+                                            <th className="px-4 py-3 font-semibold">Name of the Purchaser</th>
+                                            <th className="px-4 py-3 font-semibold">Description</th>
+                                            <th className="px-4 py-3 font-semibold text-right">Value of Supply</th>
+                                            <th className="px-4 py-3 font-semibold text-right">VAT Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
                                         {invoices.map((invoice) => (
                                             <tr key={invoice.id} className="bg-card hover:bg-muted/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium">
-                                                    {format(new Date(invoice.invoice_date), 'yyyy-MM-dd')}
+                                                <td className="px-4 py-4 text-center text-muted-foreground">
+                                                    {invoice.serial_no}
                                                 </td>
-                                                <td className="px-6 py-4 font-medium text-primary">
+                                                <td className="px-4 py-4 whitespace-nowrap">
+                                                    {invoice.invoice_date}
+                                                </td>
+                                                <td className="px-4 py-4 font-medium text-primary whitespace-nowrap">
                                                     {invoice.tax_invoice_no}
                                                 </td>
-                                                <td className="px-6 py-4">{invoice.payment_method_name}</td>
-                                                <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                <td className="px-4 py-4">{invoice.tin}</td>
+                                                <td className="px-4 py-4">{invoice.purchaser_name}</td>
+                                                <td className="px-4 py-4">{invoice.description}</td>
+                                                <td className="px-4 py-4 text-right whitespace-nowrap">
                                                     {formatCurrency(Number(invoice.subtotal))}
                                                 </td>
-                                                <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                <td className="px-4 py-4 text-right whitespace-nowrap">
                                                     {formatCurrency(Number(invoice.vat_amount))}
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-semibold whitespace-nowrap">
-                                                    {formatCurrency(Number(invoice.total_amount))}
                                                 </td>
                                             </tr>
                                         ))}
@@ -297,17 +302,14 @@ export default function InvoiceSummary({ clients, paymentMethods }: PageProps) {
                                     {totals && (
                                         <tfoot className="bg-muted/50 font-bold border-t-2 border-border">
                                             <tr>
-                                                <td colSpan={3} className="px-6 py-4 text-right uppercase text-muted-foreground">
+                                                <td colSpan={6} className="px-4 py-4 text-right uppercase text-muted-foreground">
                                                     Grand Total
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
+                                                <td className="px-4 py-4 text-right">
                                                     {formatCurrency(Number(totals.sum_net))}
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
+                                                <td className="px-4 py-4 text-right">
                                                     {formatCurrency(Number(totals.sum_vat))}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    {formatCurrency(Number(totals.sum_total))}
                                                 </td>
                                             </tr>
                                         </tfoot>

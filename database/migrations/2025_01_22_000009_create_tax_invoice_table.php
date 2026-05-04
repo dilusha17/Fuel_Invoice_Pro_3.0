@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tax_invoice', function (Blueprint $table) {
             $table->id();
             $table->string('tax_invoice_no', 45)->nullable();
-            $table->dateTime('invoice_date')->nullable();
+            $table->date('invoice_date')->nullable();
             $table->string('client_name', 255)->nullable();
             $table->string('vehicle_no', 255)->nullable();
             $table->unsignedBigInteger('payment_method_id')->default(1);
