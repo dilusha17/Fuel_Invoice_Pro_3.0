@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import { Search, Printer, FileX, Loader2, ShoppingBag } from 'lucide-react';
+import { Search, Download, FileX, Loader2, ShoppingBag } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import { useToast } from '@/hooks/use-toast';
@@ -17,27 +17,21 @@ interface PageProps {
 
 interface PurchaseRecord {
     id: number;
-    date: string;
-    invoice_number: string | null;
-    supplier_name: string | null;
-    fuel_category_name: string;
-    fuel_type_name: string;
-    volume: number;
-    unit_price: number;
-    amount: number;
-    discount: number;
-    invoice_amount: number;
-    vat_percentage: number;
-    vat_amount: number;
+    serial_no: number;
+    invoice_date: string;
+    tax_invoice_no: string;
+    tin: string;
+    supplier_name: string;
+    description: string;
     net_amount: number;
+    vat_amount: number;
+    disallowed_vat: number;
 }
 
 interface PurchaseTotals {
-    sum_amount: number;
-    sum_discount: number;
-    sum_invoice_amount: number;
-    sum_vat: number;
     sum_net: number;
+    sum_vat: number;
+    sum_disallowed_vat: number;
 }
 
 export default function PurchaseSummary({ fuelCategories }: PageProps) {
@@ -131,14 +125,14 @@ export default function PurchaseSummary({ fuelCategories }: PageProps) {
         return pages;
     };
 
-    const handlePrint = () => {
+    const handleExportCsv = () => {
         if (!filters.fromDate || !filters.toDate) return;
         const queryParams = new URLSearchParams({
             from_date:        format(filters.fromDate, 'yyyy-MM-dd'),
             to_date:          format(filters.toDate, 'yyyy-MM-dd'),
             fuel_category_id: filters.fuelCategoryId || '',
         });
-        window.open(`/api/purchase-summary/print?${queryParams}`, '_blank');
+        window.open(`/api/purchase-summary/export-csv?${queryParams}`, '_blank');
     };
 
     return (
@@ -184,11 +178,11 @@ export default function PurchaseSummary({ fuelCategories }: PageProps) {
                     {hasSearched && records.length > 0 && (
                         <button
                             type="button"
-                            onClick={handlePrint}
+                            onClick={handleExportCsv}
                             className="btn-success-glow flex items-center gap-2"
                         >
-                            <Printer className="h-5 w-5" />
-                            Print Summary
+                            <Download className="h-5 w-5" />
+                            Download CSV
                         </button>
                     )}
                     <button
@@ -218,36 +212,36 @@ export default function PurchaseSummary({ fuelCategories }: PageProps) {
                                 <table className="w-full text-sm text-left">
                                     <thead className="text-xs uppercase bg-muted/50 text-muted-foreground border-b border-border">
                                         <tr>
-                                            <th className="px-4 py-3 font-semibold">Date</th>
-                                            <th className="px-4 py-3 font-semibold">Invoice No</th>
-                                            <th className="px-4 py-3 font-semibold">Supplier</th>
-                                            <th className="px-4 py-3 font-semibold text-center">VAT%</th>
-                                            <th className="px-4 py-3 font-semibold text-right">Invoice Amt</th>
-                                            <th className="px-4 py-3 font-semibold text-right">VAT Amt</th>
-                                            <th className="px-4 py-3 font-semibold text-right">Net Amount</th>
+                                            <th className="px-4 py-3 font-semibold">#</th>
+                                            <th className="px-4 py-3 font-semibold">Invoice Date</th>
+                                            <th className="px-4 py-3 font-semibold">Tax Invoice No</th>
+                                            <th className="px-4 py-3 font-semibold">Supplier's TIN</th>
+                                            <th className="px-4 py-3 font-semibold">Name of the Supplier</th>
+                                            <th className="px-4 py-3 font-semibold">Description</th>
+                                            <th className="px-4 py-3 font-semibold text-right">Value of Purchase</th>
+                                            <th className="px-4 py-3 font-semibold text-right">VAT Amount</th>
+                                            <th className="px-4 py-3 font-semibold text-right">Disallowed VAT Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
                                         {records.map((record) => (
                                             <tr key={record.id} className="bg-card hover:bg-muted/50 transition-colors">
-                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                    {format(new Date(record.date), 'yyyy-MM-dd')}
-                                                </td>
+                                                <td className="px-4 py-3">{record.serial_no}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{record.invoice_date}</td>
                                                 <td className="px-4 py-3 font-medium text-primary">
-                                                    {record.invoice_number || '-'}
+                                                    {record.tax_invoice_no || '-'}
                                                 </td>
+                                                <td className="px-4 py-3">{record.tin || '-'}</td>
                                                 <td className="px-4 py-3">{record.supplier_name || '-'}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    {Number(record.vat_percentage).toFixed(2)}%
-                                                </td>
+                                                <td className="px-4 py-3">{record.description}</td>
                                                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                                                    {formatCurrency(Number(record.invoice_amount))}
+                                                    {formatCurrency(Number(record.net_amount))}
                                                 </td>
                                                 <td className="px-4 py-3 text-right whitespace-nowrap">
                                                     {formatCurrency(Number(record.vat_amount))}
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-semibold whitespace-nowrap">
-                                                    {formatCurrency(Number(record.net_amount))}
+                                                <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                    {formatCurrency(Number(record.disallowed_vat))}
                                                 </td>
                                             </tr>
                                         ))}
@@ -255,18 +249,17 @@ export default function PurchaseSummary({ fuelCategories }: PageProps) {
                                     {totals && (
                                         <tfoot className="bg-muted/50 font-bold border-t-2 border-border">
                                             <tr>
-                                                <td colSpan={3} className="px-4 py-4 text-right uppercase text-muted-foreground">
+                                                <td colSpan={6} className="px-4 py-4 text-right uppercase text-muted-foreground">
                                                     Grand Total
                                                 </td>
-                                                <td></td>
                                                 <td className="px-4 py-4 text-right">
-                                                    {formatCurrency(Number(totals.sum_invoice_amount))}
+                                                    {formatCurrency(Number(totals.sum_net))}
                                                 </td>
                                                 <td className="px-4 py-4 text-right">
                                                     {formatCurrency(Number(totals.sum_vat))}
                                                 </td>
                                                 <td className="px-4 py-4 text-right">
-                                                    {formatCurrency(Number(totals.sum_net))}
+                                                    {formatCurrency(Number(totals.sum_disallowed_vat))}
                                                 </td>
                                             </tr>
                                         </tfoot>

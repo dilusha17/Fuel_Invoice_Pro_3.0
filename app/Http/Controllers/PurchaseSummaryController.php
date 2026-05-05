@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\FuelCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PurchaseSummaryController extends Controller
 {
@@ -33,6 +33,13 @@ class PurchaseSummaryController extends Controller
 
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
         $toDate   = Carbon::parse($request->to_date)->endOfDay();
+        $page     = (int) $request->input('page', 1);
+        $perPage  = 20;
+        $offset   = ($page - 1) * $perPage;
+
+        $settings     = DB::table('settings')->first();
+        $tin          = substr($settings->supplier_vat_no ?? '', 0, 9);
+        $supplierName = $settings->supplier_name ?? '';
 
         $query = DB::table('purchase')
             ->join('fuel_category', 'purchase.fuel_category_id', '=', 'fuel_category.id')
@@ -41,14 +48,8 @@ class PurchaseSummaryController extends Controller
                 'purchase.id',
                 'purchase.date',
                 'purchase.invoice_number',
-                'purchase.supplier_name',
-                'fuel_category.name as fuel_category_name',
                 'fuel_type.name as fuel_type_name',
-                'purchase.volume',
-                'purchase.unit_price',
-                'purchase.amount',
                 'purchase.discount',
-                'purchase.invoice_amount',
                 'purchase.vat_percentage',
                 'purchase.vat_amount',
                 'purchase.net_amount'
@@ -59,34 +60,75 @@ class PurchaseSummaryController extends Controller
             $query->where('purchase.fuel_category_id', $request->fuel_category_id);
         }
 
-        // Totals (un-paginated clone)
-        $totalsQuery = clone $query;
+        // Totals — separate query with ONLY aggregate selects (avoids ONLY_FULL_GROUP_BY)
+        $totalsBaseQuery = DB::table('purchase')
+            ->join('fuel_category', 'purchase.fuel_category_id', '=', 'fuel_category.id')
+            ->join('fuel_type', 'purchase.fuel_type_id', '=', 'fuel_type.id')
+            ->whereBetween('purchase.date', [$fromDate->toDateString(), $toDate->toDateString()]);
+
+        if ($request->fuel_category_id) {
+            $totalsBaseQuery->where('purchase.fuel_category_id', $request->fuel_category_id);
+        }
+
+        $totalsRaw = $totalsBaseQuery->selectRaw(
+            'SUM(purchase.net_amount) as sum_net,
+             SUM(purchase.vat_amount) as sum_vat,
+             SUM(purchase.discount / (100 + purchase.vat_percentage) * purchase.vat_percentage) as sum_disallowed_vat'
+        )->first();
+
         $totals = [
-            'sum_amount'         => round((float) $totalsQuery->sum('purchase.amount'), 2),
-            'sum_discount'       => round((float) $totalsQuery->sum('purchase.discount'), 2),
-            'sum_invoice_amount' => round((float) $totalsQuery->sum('purchase.invoice_amount'), 2),
-            'sum_vat'            => round((float) $totalsQuery->sum('purchase.vat_amount'), 2),
-            'sum_net'            => round((float) $totalsQuery->sum('purchase.net_amount'), 2),
+            'sum_net'             => round((float) ($totalsRaw->sum_net ?? 0), 2),
+            'sum_vat'             => round((float) ($totalsRaw->sum_vat ?? 0), 2),
+            'sum_disallowed_vat'  => round((float) ($totalsRaw->sum_disallowed_vat ?? 0), 2),
         ];
 
-        $records = $query->orderBy('purchase.date')->paginate(20);
+        $paginated = $query->orderBy('purchase.date')->paginate($perPage);
+
+        $mapped = collect($paginated->items())->map(function ($row, $index) use ($offset, $tin, $supplierName) {
+            $disallowedVat = ($row->vat_percentage > 0)
+                ? round($row->discount / (100 + $row->vat_percentage) * $row->vat_percentage, 2)
+                : 0.00;
+
+            return [
+                'id'              => $row->id,
+                'serial_no'       => $offset + $index + 1,
+                'invoice_date'    => Carbon::parse($row->date)->format('m/d/Y'),
+                'tax_invoice_no'  => $row->invoice_number ?? '',
+                'tin'             => $tin,
+                'supplier_name'   => $supplierName,
+                'description'     => $row->fuel_type_name . ' Fuel Purchase',
+                'net_amount'      => round((float) $row->net_amount, 2),
+                'vat_amount'      => round((float) $row->vat_amount, 2),
+                'disallowed_vat'  => $disallowedVat,
+            ];
+        });
 
         return response()->json([
-            'records' => $records,
+            'records' => [
+                'data'         => $mapped,
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
             'totals'  => $totals,
         ]);
     }
 
-    public function print(Request $request)
+    public function exportCsv(Request $request): StreamedResponse
     {
         $request->validate([
-            'from_date' => 'required|date',
-            'to_date'   => 'required|date|after_or_equal:from_date',
+            'from_date'        => 'required|date',
+            'to_date'          => 'required|date|after_or_equal:from_date',
             'fuel_category_id' => 'nullable|integer|exists:fuel_category,id',
         ]);
 
-        $fromDate = Carbon::parse($request->from_date);
-        $toDate   = Carbon::parse($request->to_date);
+        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+        $toDate   = Carbon::parse($request->to_date)->endOfDay();
+
+        $settings     = DB::table('settings')->first();
+        $tin          = substr($settings->supplier_vat_no ?? '', 0, 9);
+        $supplierName = $settings->supplier_name ?? '';
 
         $query = DB::table('purchase')
             ->join('fuel_category', 'purchase.fuel_category_id', '=', 'fuel_category.id')
@@ -94,12 +136,8 @@ class PurchaseSummaryController extends Controller
             ->select(
                 'purchase.date',
                 'purchase.invoice_number',
-                'purchase.supplier_name',
-                'fuel_category.name as fuel_category_name',
                 'fuel_type.name as fuel_type_name',
-                'purchase.amount',
                 'purchase.discount',
-                'purchase.invoice_amount',
                 'purchase.vat_percentage',
                 'purchase.vat_amount',
                 'purchase.net_amount'
@@ -111,37 +149,66 @@ class PurchaseSummaryController extends Controller
             $query->where('purchase.fuel_category_id', $request->fuel_category_id);
         }
 
-        $records = $query->get();
+        $records  = $query->get();
+        $filename = 'purchase-summary-' . $fromDate->format('m-d-Y') . '-to-' . $toDate->format('m-d-Y') . '.csv';
 
-        $totals = [
-            'sum_amount'         => round((float) $records->sum('amount'), 2),
-            'sum_discount'       => round((float) $records->sum('discount'), 2),
-            'sum_invoice_amount' => round((float) $records->sum('invoice_amount'), 2),
-            'sum_vat'            => round((float) $records->sum('vat_amount'), 2),
-            'sum_net'            => round((float) $records->sum('net_amount'), 2),
-        ];
+        return new StreamedResponse(function () use ($records, $tin, $supplierName, $filename) {
+            $handle = fopen('php://output', 'w');
 
-        $settings = DB::table('settings')->first();
+            fputcsv($handle, [
+                'Serial No',
+                'Invoice Date',
+                'Tax Invoice No',
+                "Supplier's TIN",
+                'Name of the Supplier',
+                'Description',
+                'Value of purchase',
+                'VAT Amount',
+                'Disallowed VAT Amount',
+            ]);
 
-        $data = [
-            'companyName'    => $settings->company_name,
-            'companyAddress' => $settings->company_address,
-            'companyPhone'   => $settings->company_contact,
-            'vatRegNo'       => $settings->company_vat_no,
-            'printedDate'    => now()->format('Y-m-d'),
-            'fromDate'       => $fromDate,
-            'toDate'         => $toDate,
-            'records'        => $records,
-            'totals'         => $totals,
-        ];
+            $sumNet          = 0.0;
+            $sumVat          = 0.0;
+            $sumDisallowed   = 0.0;
 
-        $pdf = Pdf::loadView('pdf.purchase-summary', $data);
-        $pdf->setPaper('A4', 'portrait');
-        $pdf->setOption('margin-top', '10mm');
-        $pdf->setOption('margin-right', '10mm');
-        $pdf->setOption('margin-bottom', '10mm');
-        $pdf->setOption('margin-left', '10mm');
+            foreach ($records as $index => $row) {
+                $disallowedVat = ($row->vat_percentage > 0)
+                    ? round($row->discount / (100 + $row->vat_percentage) * $row->vat_percentage, 2)
+                    : 0.00;
 
-        return $pdf->stream('purchase-summary-' . $fromDate->format('Y-m-d') . '-to-' . $toDate->format('Y-m-d') . '.pdf');
+                $net = round((float) $row->net_amount, 2);
+                $vat = round((float) $row->vat_amount, 2);
+
+                $sumNet        += $net;
+                $sumVat        += $vat;
+                $sumDisallowed += $disallowedVat;
+
+                fputcsv($handle, [
+                    $index + 1,
+                    Carbon::parse($row->date)->format('m/d/Y'),
+                    $row->invoice_number ?? '',
+                    $tin,
+                    $supplierName,
+                    $row->fuel_type_name . ' Fuel Purchase',
+                    $net,
+                    $vat,
+                    $disallowedVat,
+                ]);
+            }
+
+            // Totals row
+            fputcsv($handle, [
+                '', '', '', '', '', 'Total',
+                round($sumNet, 2),
+                round($sumVat, 2),
+                round($sumDisallowed, 2),
+            ]);
+
+            fclose($handle);
+        }, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+        ]);
     }
 }

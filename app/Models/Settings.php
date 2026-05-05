@@ -20,6 +20,7 @@ class Settings extends Model
         'company_vat_no',
         'place_of_supply',
         'supplier_name',
+        'supplier_vat_no',
     ];
 
     /**

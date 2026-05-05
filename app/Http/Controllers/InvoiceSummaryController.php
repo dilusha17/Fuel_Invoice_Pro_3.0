@@ -139,6 +139,8 @@ class InvoiceSummaryController extends Controller
             ->get()
             ->keyBy('client_name');
 
+        $filename = 'invoice-summary-' . $fromDate->format('m-d-Y') . '-to-' . $toDate->format('m-d-Y') . '.csv';
+
         return new StreamedResponse(function () use ($invoices, $clients) {
             $handle = fopen('php://output', 'w');
 
@@ -189,7 +191,7 @@ class InvoiceSummaryController extends Controller
                 '',
                 '',
                 '',
-                '',
+                'Total',
                 $sumSubtotal,
                 $sumVat,
             ]);
@@ -197,7 +199,7 @@ class InvoiceSummaryController extends Controller
             fclose($handle);
         }, 200, [
             'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="invoice-summary.csv"',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             'Cache-Control'       => 'no-store, no-cache',
             'Pragma'              => 'no-cache',
         ]);

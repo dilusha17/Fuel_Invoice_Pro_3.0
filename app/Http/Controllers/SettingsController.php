@@ -47,6 +47,7 @@ class SettingsController extends Controller
                 'vatNo' => $settings->company_vat_no ?? '',
                 'place_of_supply' => $settings->place_of_supply ?? '',
                 'supplierName' => $settings->supplier_name ?? '',
+                'supplierVatNo' => $settings->supplier_vat_no ?? '',
             ],
             'currentVat' => [
                 'percentage' => $latestVat ? $latestVat->vat_percentage : 0,
@@ -314,18 +315,19 @@ class SettingsController extends Controller
             'company_vat_no' => 'nullable|string|max:45',
             'place_of_supply' => 'nullable|string|max:255',
             'supplier_name' => 'nullable|string|max:255',
+            'supplier_vat_no' => 'nullable|string|max:45',
         ]);
 
         $settings = Settings::first();
         if (!$settings) {
             $settings = Settings::create($request->only([
                 'company_name', 'company_address', 'company_contact',
-                'company_vat_no', 'place_of_supply', 'supplier_name',
+                'company_vat_no', 'place_of_supply', 'supplier_name', 'supplier_vat_no',
             ]));
         } else {
             $settings->update($request->only([
                 'company_name', 'company_address', 'company_contact',
-                'company_vat_no', 'place_of_supply', 'supplier_name',
+                'company_vat_no', 'place_of_supply', 'supplier_name', 'supplier_vat_no',
             ]));
         }
 
@@ -339,6 +341,7 @@ class SettingsController extends Controller
                 'vatNo' => $settings->company_vat_no,
                 'place_of_supply' => $settings->place_of_supply,
                 'supplierName' => $settings->supplier_name,
+                'supplierVatNo' => $settings->supplier_vat_no,
             ],
         ]);
     }

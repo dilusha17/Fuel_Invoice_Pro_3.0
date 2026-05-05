@@ -179,7 +179,7 @@ Route::middleware(['auth'])->group(function () {
     // API Routes for Purchase Summary
     Route::prefix('api/purchase-summary')->group(function () {
         Route::get('/search', [PurchaseSummaryController::class, 'search'])->name('api.purchase-summary.search');
-        Route::get('/print', [PurchaseSummaryController::class, 'print'])->name('api.purchase-summary.print');
+        Route::get('/export-csv', [PurchaseSummaryController::class, 'exportCsv'])->name('api.purchase-summary.export-csv');
     });
 
     // API Routes for VAT Balance

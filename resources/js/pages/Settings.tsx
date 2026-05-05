@@ -27,6 +27,7 @@ interface CompanyDetails {
     vatNo: string;
     place_of_supply?: string;
     supplierName?: string;
+    supplierVatNo?: string;
 }
 
 interface CurrentVat {
@@ -95,6 +96,7 @@ export default function Settings({
         vatNo: companyDetails.vatNo,
         place_of_supply: companyDetails.place_of_supply || '',
         supplierName: companyDetails.supplierName || '',
+        supplierVatNo: companyDetails.supplierVatNo || '',
     });
 
     // Create options for fuel types dropdown
@@ -205,6 +207,7 @@ export default function Settings({
                     company_vat_no: companyForm.vatNo,
                     place_of_supply: companyForm.place_of_supply,
                     supplier_name: companyForm.supplierName,
+                    supplier_vat_no: companyForm.supplierVatNo,
                 }),
             });
 
@@ -239,6 +242,7 @@ export default function Settings({
             vatNo: companyDetails.vatNo,
             place_of_supply: companyDetails.place_of_supply || '',
             supplierName: companyDetails.supplierName || '',
+            supplierVatNo: companyDetails.supplierVatNo || '',
         });
         setIsEditingCompany(false);
     };
@@ -476,6 +480,17 @@ export default function Settings({
                                     })
                                 }
                             />
+                            <FloatingInput
+                                label="Supplier VAT No"
+                                type="text"
+                                value={companyForm.supplierVatNo}
+                                onChange={(e) =>
+                                    setCompanyForm({
+                                        ...companyForm,
+                                        supplierVatNo: e.target.value,
+                                    })
+                                }
+                            />
                             <div className="flex gap-2 pt-2">
                                 <button
                                     type="button"
@@ -551,6 +566,14 @@ export default function Settings({
                                     <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                                     <p className="text-muted-foreground">
                                         {companyForm.supplierName}
+                                    </p>
+                                </div>
+                            )}
+                            {companyForm.supplierVatNo && (
+                                <div className="flex items-center gap-3 text-sm">
+                                    <Receipt className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <p className="text-muted-foreground">
+                                        {companyForm.supplierVatNo}
                                     </p>
                                 </div>
                             )}
