@@ -191,7 +191,7 @@ class InvoiceSummaryController extends Controller
                 '',
                 '',
                 '',
-                'Total',
+                '',
                 $sumSubtotal,
                 $sumVat,
             ]);

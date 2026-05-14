@@ -14,15 +14,15 @@ return new class extends Migration
         Schema::create('tax_invoice_invoice_nos', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('tax_invoice_id');
-            $table->unsignedBigInteger('invoice_daily_id');
+            $table->unsignedBigInteger('invoice_daily_id')->nullable();
 
             $table->foreign('tax_invoice_id')
                 ->references('id')
-                ->on('tax_invoice');
+                ->on('tax_invoice')->cascadeOnDelete();
 
             $table->foreign('invoice_daily_id')
                 ->references('id')
-                ->on('invoice_daily');
+                ->on('invoice_daily')->nullOnDelete();
         });
     }
 

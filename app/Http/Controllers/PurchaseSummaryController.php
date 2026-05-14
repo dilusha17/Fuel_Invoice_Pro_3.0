@@ -72,22 +72,19 @@ class PurchaseSummaryController extends Controller
 
         $totalsRaw = $totalsBaseQuery->selectRaw(
             'SUM(purchase.net_amount) as sum_net,
-             SUM(purchase.vat_amount) as sum_vat,
-             SUM(purchase.discount / (100 + purchase.vat_percentage) * purchase.vat_percentage) as sum_disallowed_vat'
+             SUM(purchase.vat_amount) as sum_vat'
         )->first();
 
         $totals = [
             'sum_net'             => round((float) ($totalsRaw->sum_net ?? 0), 2),
             'sum_vat'             => round((float) ($totalsRaw->sum_vat ?? 0), 2),
-            'sum_disallowed_vat'  => round((float) ($totalsRaw->sum_disallowed_vat ?? 0), 2),
+            'sum_disallowed_vat'  => 0.00,
         ];
 
         $paginated = $query->orderBy('purchase.date')->paginate($perPage);
 
         $mapped = collect($paginated->items())->map(function ($row, $index) use ($offset, $tin, $supplierName) {
-            $disallowedVat = ($row->vat_percentage > 0)
-                ? round($row->discount / (100 + $row->vat_percentage) * $row->vat_percentage, 2)
-                : 0.00;
+            $disallowedVat = 0.00;
 
             return [
                 'id'              => $row->id,
@@ -172,9 +169,7 @@ class PurchaseSummaryController extends Controller
             $sumDisallowed   = 0.0;
 
             foreach ($records as $index => $row) {
-                $disallowedVat = ($row->vat_percentage > 0)
-                    ? round($row->discount / (100 + $row->vat_percentage) * $row->vat_percentage, 2)
-                    : 0.00;
+                $disallowedVat = 0.00;
 
                 $net = round((float) $row->net_amount, 2);
                 $vat = round((float) $row->vat_amount, 2);
@@ -198,7 +193,12 @@ class PurchaseSummaryController extends Controller
 
             // Totals row
             fputcsv($handle, [
-                '', '', '', '', '', 'Total',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
                 round($sumNet, 2),
                 round($sumVat, 2),
                 round($sumDisallowed, 2),
