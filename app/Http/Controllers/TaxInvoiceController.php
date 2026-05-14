@@ -217,9 +217,9 @@ class TaxInvoiceController extends Controller
 
         // Get VAT percentage from the last invoice record (not current system VAT)
         $vatPercentage = $invoices->isNotEmpty() ? $invoices->last()->vat_percentage : 0;
-        // Calculate totals from normalized record values.
-        $subtotal = round($records->sum('amountExclVat'), 0);
-        $vatAmount = round($subtotal * ($vatPercentage / 100), 0);
+        // Totals: direct sum of stored sub_total and vat_amount columns, rounded to nearest whole number.
+        $subtotal = (int) round($invoices->sum('sub_total'), 0);
+        $vatAmount = (int) round($invoices->sum('vat_amount'), 0);
         $grandTotal = $subtotal + $vatAmount;
 
         // Get settings for header company info
