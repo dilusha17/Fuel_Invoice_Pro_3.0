@@ -54,13 +54,14 @@ interface MonthlySaleProps {
 }
 
 export default function MonthlySale({
-    recentEntries,
+    recentEntries: initialRecentEntries,
     vatPercentage,
 }: MonthlySaleProps) {
     const { toast } = useToast();
     const { props } = usePage<{ csrf_token: string }>();
     const [activeTab, setActiveTab] = useState<'entry' | 'history'>('entry');
     const [isLoading, setIsLoading] = useState(false);
+    const [recentEntries, setRecentEntries] = useState<RecentEntry[]>(initialRecentEntries);
 
     const formatCurrency = (value: number): string => {
         return value.toLocaleString('en-US', {
@@ -95,6 +96,20 @@ export default function MonthlySale({
         const netAmount = Math.round((income - vatAmount) * 100) / 100;
         return { vatAmount, netAmount };
     })();
+
+    const fetchRecentEntries = async () => {
+        try {
+            const response = await fetch('/api/monthly-sale/recent-entries', {
+                headers: { 'X-CSRF-TOKEN': props.csrf_token },
+            });
+            const data = await response.json();
+            if (data.success) {
+                setRecentEntries(data.data);
+            }
+        } catch {
+            // silently ignore — stale data is acceptable
+        }
+    };
 
     const handleSave = async () => {
         if (!entryData.totalIncome) {
@@ -131,6 +146,7 @@ export default function MonthlySale({
                     description: `Monthly sale for ${monthName} ${entryData.year} saved successfully.`,
                 });
                 setEntryData({ ...entryData, totalIncome: '' });
+                fetchRecentEntries();
             } else {
                 toast({
                     title: 'Error',

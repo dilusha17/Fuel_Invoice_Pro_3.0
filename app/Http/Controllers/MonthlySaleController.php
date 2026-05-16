@@ -42,6 +42,31 @@ class MonthlySaleController extends Controller
     }
 
     /**
+     * Return the 5 most recent monthly income entries as JSON
+     */
+    public function getRecentEntries()
+    {
+        $recentEntries = DB::table('monthly_income')
+            ->select('year', 'month', 'income', 'vat_percentage', 'vat_amount', 'net_amount')
+            ->orderBy('year', 'desc')
+            ->orderBy('month', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($record) {
+                return [
+                    'year'           => $record->year,
+                    'month'          => str_pad($record->month, 2, '0', STR_PAD_LEFT),
+                    'income'         => (float) $record->income,
+                    'vat_percentage' => (float) ($record->vat_percentage ?? 0),
+                    'vat_amount'     => (float) ($record->vat_amount ?? 0),
+                    'net_amount'     => (float) ($record->net_amount ?? 0),
+                ];
+            });
+
+        return response()->json(['success' => true, 'data' => $recentEntries]);
+    }
+
+    /**
      * Store monthly sale record with VAT calculation
      */
     public function store(Request $request)

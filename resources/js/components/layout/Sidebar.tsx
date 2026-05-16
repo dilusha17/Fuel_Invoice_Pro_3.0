@@ -116,10 +116,10 @@ export function Sidebar() {
                     <div className="p-6 border-b border-sidebar-border">
                         <h1 className="text-xl font-bold text-sidebar-foreground">
                             Fuel <span className="text-primary">Invoice </span>
-                            Pro 2.0
+                            Pro 3.0
                         </h1>
                         <p className="text-xs text-sidebar-foreground/60 mt-1">
-                            Tax Invoice Management
+                            VAT Management System
                         </p>
                     </div>
 
