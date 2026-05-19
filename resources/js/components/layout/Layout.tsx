@@ -13,7 +13,7 @@ export function Layout({ children }: LayoutProps) {
                     {children}
                 </div>
                 <footer className="fixed bottom-0 left-0 right-0 lg:left-64 py-3 px-4 text-center text-xs text-muted-foreground bg-gradient-to-t from-background via-background to-transparent z-40">
-                    Designed by DE Creations (PVT) Ltd.
+                    Developed by DE Creations (PVT) Ltd.
                 </footer>
             </main>
         </div>

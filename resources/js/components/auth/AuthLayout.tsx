@@ -11,7 +11,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 {children}
             </main>
             <footer className="fixed bottom-0 left-0 right-0 py-3 px-4 text-center text-xs text-muted-foreground bg-gradient-to-t from-background via-background to-transparent">
-                Designed by DE Creations (PVT) Ltd.
+                Developed by DE Creations (PVT) Ltd.
             </footer>
         </div>
     );
