@@ -247,12 +247,11 @@ class TaxInvoiceHistoryController extends Controller
 
             // Get VAT percentage from the last invoice record (not current system VAT)
             $vatPercentage = $invoices->isNotEmpty() ? $invoices->last()->vat_percentage : 0;
-            // Totals: direct sum of stored sub_total and vat_amount columns, rounded to nearest whole number.
-            $subtotal = (int) round($invoices->sum('amountExclVat'), 0);
-            $vatAmount = (int) round($invoices->sum('vatAmount'), 0);
-            $grandTotal = $subtotal + $vatAmount;
+            $subtotal = round($invoices->sum('amountExclVat'), 2);
+            $vatAmount = round($invoices->sum('vatAmount'), 2);
+            $grandTotal = round($subtotal + $vatAmount, 2);
 
-            $totalInWords = $this->convertNumberToWords($grandTotal) . ' Rupees Only';
+            $totalInWords = $this->convertNumberToWords((int) round($grandTotal)) . ' Rupees Only';
 
             // Update the tax invoice record with new calculated values BEFORE generating PDF
             $updateData = [
@@ -284,13 +283,13 @@ class TaxInvoiceHistoryController extends Controller
                 'companyName' => $settings->company_name,
                 'companyAddress' => $settings->company_address,
                 'companyPhone' => $settings->company_contact,
-                'companyVatNo' => $settings->company_vat_no,
+                'companyVatNo' => substr($settings->company_vat_no ?? '', 0, 9),
                 'placeOfSupply' => $settings->place_of_supply ?? '',
                 'printedDateTime' => date('Y-m-d', strtotime($taxInvoice->invoice_date)),
                 'clientName' => $clientCompany->c_name ?? '',
                 'clientAddress' => $clientCompany->address ?? '',
                 'clientPhone' => $clientCompany->contact_number ?? '',
-                'clientVatNo' => $clientCompany->vat_no ?? '',
+                'clientVatNo' => substr($clientCompany->vat_no ?? '', 0, 9),
                 'fromDate' => date('Y-m-d', strtotime($taxInvoice->from_date)),
                 'toDate' => date('Y-m-d', strtotime($taxInvoice->to_date)),
                 'taxInvoiceNumber' => $taxInvoice->tax_invoice_no,

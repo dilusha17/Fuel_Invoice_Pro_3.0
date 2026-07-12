@@ -217,17 +217,16 @@ class TaxInvoiceController extends Controller
 
         // Get VAT percentage from the last invoice record (not current system VAT)
         $vatPercentage = $invoices->isNotEmpty() ? $invoices->last()->vat_percentage : 0;
-        // Totals: direct sum of stored sub_total and vat_amount columns, rounded to nearest whole number.
-        $subtotal = (int) round($invoices->sum('sub_total'), 0);
-        $vatAmount = (int) round($invoices->sum('vat_amount'), 0);
-        $grandTotal = $subtotal + $vatAmount;
+        $subtotal = round($invoices->sum('sub_total'), 2);
+        $vatAmount = round($invoices->sum('vat_amount'), 2);
+        $grandTotal = round($subtotal + $vatAmount, 2);
 
         // Get settings for header company info
         $settings = Settings::first();
         $placeOfSupply = Settings::getPlaceOfSupply();
 
         // Convert Total to Words
-        $totalInWords = $this->convertNumberToWords($grandTotal) . ' Rupees Only';
+        $totalInWords = $this->convertNumberToWords((int) round($grandTotal)) . ' Rupees Only';
 
         // Get payment method label
         $paymentMethodId = (int) $request->payment_method;
@@ -239,11 +238,11 @@ class TaxInvoiceController extends Controller
             'companyName' => $settings->company_name ?? '',
             'companyAddress' => $settings->company_address ?? '',
             'companyPhone' => $settings->company_contact ?? '',
-            'companyVatNo' => $settings->company_vat_no ?? '',
+            'companyVatNo' => substr($settings->company_vat_no ?? '', 0, 9),
             'clientName' => $client->c_name ?? '',
             'clientAddress' => $client->address ?? '',
             'clientPhone' => $client->contact_number ?? '',
-            'clientVatNo' => $client->vat_no ?? '',
+            'clientVatNo' => substr($client->vat_no ?? '', 0, 9),
             'taxInvoiceNumber' => $request->tax_invoice_number,
             'printedDateTime' => $request->invoice_date,
             'fromDate' => $request->from_date,
