@@ -170,6 +170,8 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('api/monthly-sale')->group(function () {
         Route::post('/store', [MonthlySaleController::class, 'store'])->name('api.monthly-sale.store');
         Route::post('/show', [MonthlySaleController::class, 'show'])->name('api.monthly-sale.show');
+        Route::put('/update', [MonthlySaleController::class, 'update'])->name('api.monthly-sale.update');
+        Route::delete('/delete', [MonthlySaleController::class, 'destroy'])->name('api.monthly-sale.delete');
         Route::post('/generate-pdf', [MonthlySaleController::class, 'generatePDF'])->name('api.monthly-sale.generate-pdf');
         Route::get('/recent-entries', [MonthlySaleController::class, 'getRecentEntries'])->name('api.monthly-sale.recent-entries');
     });

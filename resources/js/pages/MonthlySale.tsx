@@ -7,10 +7,24 @@ import {
     TrendingUp,
     Calculator,
     Receipt,
+    Pencil,
+    Trash2,
+    Save,
+    X,
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { FloatingInput } from '@/components/ui/FloatingInput';
 import { useToast } from '@/hooks/use-toast';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const generateYears = () => {
     const currentYear = new Date().getFullYear();
@@ -88,9 +102,20 @@ export default function MonthlySale({
         netAmount: number;
     } | null>(null);
 
-    // Preview calculation for entry tab
+    const [isEditing, setIsEditing] = useState(false);
+    const [editIncome, setEditIncome] = useState('');
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
     const previewVatAmount = (() => {
         const income = parseFloat(entryData.totalIncome) || 0;
+        if (income <= 0 || vatPercentage <= 0) return { vatAmount: 0, netAmount: 0 };
+        const vatAmount = Math.round((income * (vatPercentage / (100 + vatPercentage))) * 100) / 100;
+        const netAmount = Math.round((income - vatAmount) * 100) / 100;
+        return { vatAmount, netAmount };
+    })();
+
+    const editPreview = (() => {
+        const income = parseFloat(editIncome) || 0;
         if (income <= 0 || vatPercentage <= 0) return { vatAmount: 0, netAmount: 0 };
         const vatAmount = Math.round((income * (vatPercentage / (100 + vatPercentage))) * 100) / 100;
         const netAmount = Math.round((income - vatAmount) * 100) / 100;
@@ -167,6 +192,7 @@ export default function MonthlySale({
 
     const handleView = async () => {
         setIsLoading(true);
+        setIsEditing(false);
 
         try {
             const response = await fetch('/api/monthly-sale/show', {
@@ -213,6 +239,120 @@ export default function MonthlySale({
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleEdit = () => {
+        if (retrievedData) {
+            setEditIncome(retrievedData.totalIncome.toString());
+            setIsEditing(true);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditIncome('');
+    };
+
+    const handleUpdate = async () => {
+        if (!editIncome || parseFloat(editIncome) <= 0) {
+            toast({
+                title: 'Validation Error',
+                description: 'Please enter a valid income amount.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const response = await fetch('/api/monthly-sale/update', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': props.csrf_token,
+                },
+                body: JSON.stringify({
+                    year: parseInt(historyData.year),
+                    month: parseInt(historyData.month),
+                    income: parseFloat(editIncome),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const monthName = months.find((m) => m.value === historyData.month)?.label;
+                toast({
+                    title: 'Updated!',
+                    description: `Monthly sale for ${monthName} ${historyData.year} updated successfully.`,
+                });
+                setIsEditing(false);
+                setEditIncome('');
+                fetchRecentEntries();
+                handleView();
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.message || 'Failed to update monthly sale.',
+                    variant: 'destructive',
+                });
+            }
+        } catch {
+            toast({
+                title: 'Error',
+                description: 'Failed to update monthly sale.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        setIsLoading(true);
+
+        try {
+            const response = await fetch('/api/monthly-sale/delete', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': props.csrf_token,
+                },
+                body: JSON.stringify({
+                    year: parseInt(historyData.year),
+                    month: parseInt(historyData.month),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const monthName = months.find((m) => m.value === historyData.month)?.label;
+                toast({
+                    title: 'Deleted!',
+                    description: `Monthly sale for ${monthName} ${historyData.year} deleted successfully.`,
+                });
+                setRetrievedData(null);
+                setIsEditing(false);
+                fetchRecentEntries();
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.message || 'Failed to delete monthly sale.',
+                    variant: 'destructive',
+                });
+            }
+        } catch {
+            toast({
+                title: 'Error',
+                description: 'Failed to delete monthly sale.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+            setShowDeleteDialog(false);
         }
     };
 
@@ -350,6 +490,7 @@ export default function MonthlySale({
                                 onChange={(value) => {
                                     setHistoryData({ ...historyData, year: value });
                                     setRetrievedData(null);
+                                    setIsEditing(false);
                                 }}
                             />
                             <SearchableSelect
@@ -359,6 +500,7 @@ export default function MonthlySale({
                                 onChange={(value) => {
                                     setHistoryData({ ...historyData, month: value });
                                     setRetrievedData(null);
+                                    setIsEditing(false);
                                 }}
                             />
                         </div>
@@ -373,7 +515,7 @@ export default function MonthlySale({
                             {isLoading ? 'Loading...' : 'View'}
                         </button>
 
-                        {retrievedData && (
+                        {retrievedData && !isEditing && (
                             <div className="bg-success/5 border border-success/20 rounded-2xl p-6 space-y-4 animate-scale-in">
                                 {/* Total Income */}
                                 <div className="text-center pb-4 border-b border-success/20">
@@ -408,14 +550,94 @@ export default function MonthlySale({
                                     </span>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={handlePrint}
-                                    className="btn-success-glow w-full mt-4 flex items-center justify-center gap-2"
-                                >
-                                    <Printer className="h-5 w-5" />
-                                    Print
-                                </button>
+                                {/* Action Buttons */}
+                                <div className="grid grid-cols-3 gap-3 mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrint}
+                                        className="btn-success-glow flex items-center justify-center gap-2"
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                        Print
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleEdit}
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        Edit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeleteDialog(true)}
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Edit Mode */}
+                        {retrievedData && isEditing && (
+                            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 space-y-4 animate-scale-in">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-semibold text-foreground">Edit Monthly Sale</h3>
+                                    <button
+                                        type="button"
+                                        onClick={handleCancelEdit}
+                                        className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                                    >
+                                        <X className="h-4 w-4 text-muted-foreground" />
+                                    </button>
+                                </div>
+
+                                <FloatingInput
+                                    label="Total Income (LKR)"
+                                    type="number"
+                                    value={editIncome}
+                                    onChange={(e) => setEditIncome(e.target.value)}
+                                    className="border-2 border-primary/30 focus:border-primary"
+                                />
+
+                                {parseFloat(editIncome) > 0 && (
+                                    <div className="bg-muted/50 rounded-xl p-4 space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">VAT ({vatPercentage}%)</span>
+                                            <span className="font-medium">LKR {formatCurrency(editPreview.vatAmount)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Net Sale (Excl. VAT)</span>
+                                            <span className="font-semibold text-success">LKR {formatCurrency(editPreview.netAmount)}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleCancelEdit}
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleUpdate}
+                                        disabled={isLoading || !editIncome || parseFloat(editIncome) <= 0}
+                                        className="btn-primary-glow flex items-center justify-center gap-2"
+                                    >
+                                        {isLoading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Save className="h-4 w-4" />
+                                        )}
+                                        {isLoading ? 'Updating...' : 'Update'}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -457,6 +679,31 @@ export default function MonthlySale({
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent className="card-neumorphic-elevated border-none">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Monthly Sale?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete the monthly sale record for{' '}
+                            <strong>{months.find((m) => m.value === historyData.month)?.label} {historyData.year}</strong>?
+                            This action can be undone by an administrator.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

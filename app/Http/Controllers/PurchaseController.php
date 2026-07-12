@@ -86,7 +86,7 @@ class PurchaseController extends Controller
     {
         $request->validate([
             'supplier_name'   => 'nullable|string|max:255',
-            'invoice_number'  => 'nullable|string|max:100',
+            'tax_invoice_no'  => 'nullable|string|max:100',
             'date'            => 'required|date',
             'fuel_category_id'=> 'required|integer|exists:fuel_category,id',
             'fuel_type_id'    => 'required|integer|exists:fuel_type,id',
@@ -102,7 +102,7 @@ class PurchaseController extends Controller
 
         $purchase = Purchase::create([
             'supplier_name'    => $request->supplier_name,
-            'invoice_number'   => $request->invoice_number,
+            'tax_invoice_no'   => $request->tax_invoice_no,
             'date'             => $request->date,
             'fuel_category_id' => $request->fuel_category_id,
             'fuel_type_id'     => $request->fuel_type_id,

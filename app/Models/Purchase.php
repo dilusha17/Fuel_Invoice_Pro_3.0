@@ -11,7 +11,7 @@ class Purchase extends Model
 
     protected $fillable = [
         'supplier_name',
-        'invoice_number',
+        'tax_invoice_no',
         'date',
         'fuel_category_id',
         'fuel_type_id',
