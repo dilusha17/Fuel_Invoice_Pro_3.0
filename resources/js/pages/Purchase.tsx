@@ -35,7 +35,7 @@ interface PurchaseProps {
 }
 
 const initialFormState = (supplierName: string) => ({
-    invoiceNumber: '',
+    taxInvoiceNo: '',
     date: new Date(),
     selectedCategoryId: '',
     selectedFuelTypeId: '',
@@ -53,7 +53,7 @@ export default function Purchase({
     const { props } = usePage<{ csrf_token: string }>();
 
     // Form state
-    const [invoiceNumber, setInvoiceNumber] = useState('');
+    const [taxInvoiceNo, setTaxInvoiceNo] = useState('');
     const [date, setDate] = useState<Date>(new Date());
     const [selectedCategoryId, setSelectedCategoryId] = useState('');
     const [selectedFuelTypeId, setSelectedFuelTypeId] = useState('');
@@ -177,7 +177,7 @@ export default function Purchase({
     };
 
     const resetForm = () => {
-        setInvoiceNumber('');
+        setTaxInvoiceNo('');
         setDate(new Date());
         setSelectedCategoryId('');
         setSelectedFuelTypeId('');
@@ -205,7 +205,7 @@ export default function Purchase({
                 },
                 body: JSON.stringify({
                     supplier_name: supplierName,
-                    invoice_number: invoiceNumber,
+                    tax_invoice_no: taxInvoiceNo,
                     date: formatDateLocal(date),
                     fuel_category_id: parseInt(selectedCategoryId),
                     fuel_type_id: parseInt(selectedFuelTypeId),
@@ -272,12 +272,12 @@ export default function Purchase({
                             />
                         </div>
 
-                        {/* Invoice Number */}
+                        {/* Tax Invoice Number */}
                         <FloatingInput
-                            label="Invoice Number"
+                            label="Tax Invoice Number"
                             type="text"
-                            value={invoiceNumber}
-                            onChange={(e) => setInvoiceNumber(e.target.value)}
+                            value={taxInvoiceNo}
+                            onChange={(e) => setTaxInvoiceNo(e.target.value)}
                             icon={<Hash className="h-4 w-4" />}
                         />
 

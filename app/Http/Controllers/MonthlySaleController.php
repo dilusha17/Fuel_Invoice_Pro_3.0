@@ -16,6 +16,7 @@ class MonthlySaleController extends Controller
     {
         $recentEntries = DB::table('monthly_income')
             ->select('year', 'month', 'income', 'vat_percentage', 'vat_amount', 'net_amount')
+            ->whereNull('deleted_at')
             ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
             ->limit(5)
@@ -48,6 +49,7 @@ class MonthlySaleController extends Controller
     {
         $recentEntries = DB::table('monthly_income')
             ->select('year', 'month', 'income', 'vat_percentage', 'vat_amount', 'net_amount')
+            ->whereNull('deleted_at')
             ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
             ->limit(5)
@@ -81,6 +83,7 @@ class MonthlySaleController extends Controller
             $existing = DB::table('monthly_income')
                 ->where('year', $request->year)
                 ->where('month', $request->month)
+                ->whereNull('deleted_at')
                 ->first();
 
             if ($existing) {
@@ -122,6 +125,101 @@ class MonthlySaleController extends Controller
     }
 
     /**
+     * Update monthly sale record
+     */
+    public function update(Request $request)
+    {
+        $request->validate([
+            'year'   => 'required|integer|min:2000|max:2100',
+            'month'  => 'required|integer|min:1|max:12',
+            'income' => 'required|numeric|min:0',
+        ]);
+
+        try {
+            $existing = DB::table('monthly_income')
+                ->where('year', $request->year)
+                ->where('month', $request->month)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No record found for this period.',
+                ], 404);
+            }
+
+            $currentVat = DB::table('vat')
+                ->orderBy('from_date', 'desc')
+                ->first();
+
+            $vatPercentage = $currentVat ? (float) $currentVat->vat_percentage : 0;
+            $income        = (float) $request->income;
+            $vatAmount     = round($income * ($vatPercentage / (100 + $vatPercentage)), 2);
+            $netAmount     = round($income - $vatAmount, 2);
+
+            DB::table('monthly_income')
+                ->where('id', $existing->id)
+                ->update([
+                    'income'         => round($income, 2),
+                    'vat_percentage' => round($vatPercentage, 2),
+                    'vat_amount'     => $vatAmount,
+                    'net_amount'     => $netAmount,
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Monthly sale updated successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update monthly sale: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Soft delete monthly sale record
+     */
+    public function destroy(Request $request)
+    {
+        $request->validate([
+            'year'  => 'required|integer|min:2000|max:2100',
+            'month' => 'required|integer|min:1|max:12',
+        ]);
+
+        try {
+            $existing = DB::table('monthly_income')
+                ->where('year', $request->year)
+                ->where('month', $request->month)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No record found for this period.',
+                ], 404);
+            }
+
+            DB::table('monthly_income')
+                ->where('id', $existing->id)
+                ->update(['deleted_at' => now()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Monthly sale deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete monthly sale: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Retrieve monthly sale record
      */
     public function show(Request $request)
@@ -134,6 +232,7 @@ class MonthlySaleController extends Controller
         $record = DB::table('monthly_income')
             ->where('year', $request->year)
             ->where('month', $request->month)
+            ->whereNull('deleted_at')
             ->first();
 
         if (!$record) {
@@ -145,7 +244,6 @@ class MonthlySaleController extends Controller
 
         $income = (float) $record->income;
 
-        // Use stored VAT values if available (new records), else calculate (legacy records)
         if (!empty($record->vat_percentage) || !empty($record->vat_amount)) {
             $vatPercentage = (float) ($record->vat_percentage ?? 0);
             $vatAmount     = (float) ($record->vat_amount ?? 0);
@@ -181,6 +279,7 @@ class MonthlySaleController extends Controller
         $record = DB::table('monthly_income')
             ->where('year', $request->year)
             ->where('month', $request->month)
+            ->whereNull('deleted_at')
             ->first();
 
         if (!$record) {
@@ -208,6 +307,7 @@ class MonthlySaleController extends Controller
         $record = DB::table('monthly_income')
             ->where('year', $year)
             ->where('month', $month)
+            ->whereNull('deleted_at')
             ->first();
 
         if (!$record) {

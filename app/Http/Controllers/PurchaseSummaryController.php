@@ -47,7 +47,7 @@ class PurchaseSummaryController extends Controller
             ->select(
                 'purchase.id',
                 'purchase.date',
-                'purchase.invoice_number',
+                'purchase.tax_invoice_no',
                 'fuel_type.name as fuel_type_name',
                 'purchase.discount',
                 'purchase.vat_percentage',
@@ -90,7 +90,7 @@ class PurchaseSummaryController extends Controller
                 'id'              => $row->id,
                 'serial_no'       => $offset + $index + 1,
                 'invoice_date'    => Carbon::parse($row->date)->format('m/d/Y'),
-                'tax_invoice_no'  => $row->invoice_number ?? '',
+                'tax_invoice_no'  => $row->tax_invoice_no ?? '',
                 'tin'             => $tin,
                 'supplier_name'   => $supplierName,
                 'description'     => $row->fuel_type_name . ' Fuel Purchase',
@@ -132,7 +132,7 @@ class PurchaseSummaryController extends Controller
             ->join('fuel_type', 'purchase.fuel_type_id', '=', 'fuel_type.id')
             ->select(
                 'purchase.date',
-                'purchase.invoice_number',
+                'purchase.tax_invoice_no',
                 'fuel_type.name as fuel_type_name',
                 'purchase.discount',
                 'purchase.vat_percentage',
@@ -181,7 +181,7 @@ class PurchaseSummaryController extends Controller
                 fputcsv($handle, [
                     $index + 1,
                     Carbon::parse($row->date)->format('m/d/Y'),
-                    $row->invoice_number ?? '',
+                    $row->tax_invoice_no ?? '',
                     $tin,
                     $supplierName,
                     $row->fuel_type_name . ' Fuel Purchase',
