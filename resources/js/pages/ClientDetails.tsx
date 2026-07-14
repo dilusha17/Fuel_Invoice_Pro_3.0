@@ -40,6 +40,8 @@ const vehicleTypes = [
     { value: 'bus', label: 'Bus' },
     { value: 'truck', label: 'Truck' },
     { value: 'lorry', label: 'Lorry' },
+    { value: 'barrels', label: 'Barrels' },
+    { value: 'lubricant', label: 'Lubricant' },
 ];
 
 interface Client {

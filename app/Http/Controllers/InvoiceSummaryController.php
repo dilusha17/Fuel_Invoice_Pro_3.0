@@ -40,7 +40,7 @@ class InvoiceSummaryController extends Controller
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
         $toDate = Carbon::parse($request->to_date)->endOfDay();
 
-        $query = TaxInvoice::with(['invoiceDailies.fuelType'])
+        $query = TaxInvoice::with(['invoiceDailies.fuelType', 'invoiceDailies.lubricantType'])
             ->whereBetween('invoice_date', [$fromDate, $toDate]);
 
         if ($request->client_id) {
@@ -82,8 +82,11 @@ class InvoiceSummaryController extends Controller
             $purchaserName = $clientRecord ? ($clientRecord->c_name ?? $invoice->client_name) : $invoice->client_name;
 
             $firstDaily = $invoice->invoiceDailies->first();
-            $fuelTypeName = $firstDaily?->fuelType?->name ?? '';
-            $description = trim($fuelTypeName) !== '' ? $fuelTypeName . ' Fuel Purchase' : 'Fuel Purchase';
+            $productName = $firstDaily ? $firstDaily->getProductName() : '';
+            $isLubricant = $firstDaily && $firstDaily->lubricant_type_id !== null;
+            $description = trim($productName) !== '' && $productName !== 'N/A'
+                ? $productName . ($isLubricant ? ' Purchase' : ' Fuel Purchase')
+                : 'Fuel Purchase';
 
             return [
                 'id'             => $invoice->id,
@@ -116,7 +119,7 @@ class InvoiceSummaryController extends Controller
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
         $toDate = Carbon::parse($request->to_date)->endOfDay();
 
-        $query = TaxInvoice::with(['invoiceDailies.fuelType'])
+        $query = TaxInvoice::with(['invoiceDailies.fuelType', 'invoiceDailies.lubricantType'])
             ->whereBetween('invoice_date', [$fromDate, $toDate]);
 
         if ($request->client_id) {
@@ -166,8 +169,11 @@ class InvoiceSummaryController extends Controller
                 $purchaserName = $clientRecord ? ($clientRecord->c_name ?? $invoice->client_name) : $invoice->client_name;
 
                 $firstDaily = $invoice->invoiceDailies->first();
-                $fuelTypeName = $firstDaily?->fuelType?->name ?? '';
-                $description = trim($fuelTypeName) !== '' ? $fuelTypeName . ' Fuel Purchase' : 'Fuel Purchase';
+                $productName = $firstDaily ? $firstDaily->getProductName() : '';
+                $isLubricantItem = $firstDaily && $firstDaily->lubricant_type_id !== null;
+                $description = trim($productName) !== '' && $productName !== 'N/A'
+                    ? $productName . ($isLubricantItem ? ' Purchase' : ' Fuel Purchase')
+                    : 'Fuel Purchase';
 
                 $sumSubtotal += $invoice->subtotal;
                 $sumVat += $invoice->vat_amount;

@@ -15,6 +15,7 @@ use App\Http\Controllers\TaxInvoiceHistoryController;
 use App\Http\Controllers\InvoiceSummaryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\LubricantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -189,6 +190,16 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('api/vat-balance')->group(function () {
         Route::post('/generate', [VatBalanceController::class, 'generate'])->name('api.vat-balance.generate');
         Route::post('/print', [VatBalanceController::class, 'print'])->name('api.vat-balance.print');
+    });
+
+    // API Routes for Lubricants
+    Route::prefix('api/lubricants')->group(function () {
+        Route::get('/', [LubricantController::class, 'getLubricantTypes'])->name('api.lubricants.list');
+        Route::post('/store', [LubricantController::class, 'store'])->name('api.lubricants.store');
+        Route::put('/update/{id}', [LubricantController::class, 'update'])->name('api.lubricants.update');
+        Route::delete('/delete/{id}', [LubricantController::class, 'destroy'])->name('api.lubricants.delete');
+        Route::get('/price/{lubricant_type_id}', [LubricantController::class, 'getPrice'])->name('api.lubricants.price');
+        Route::post('/update-price', [LubricantController::class, 'updatePrice'])->name('api.lubricants.update-price');
     });
 
     // API Routes for Client Details

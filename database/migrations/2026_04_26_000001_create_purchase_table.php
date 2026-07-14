@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('purchase', function (Blueprint $table) {
             $table->id();
             $table->string('supplier_name', 255)->nullable();
-            $table->string('invoice_number', 100)->nullable();
+            $table->string('tax_invoice_no', 100)->nullable();
             $table->date('date');
             $table->unsignedBigInteger('fuel_category_id');
             $table->unsignedBigInteger('fuel_type_id');

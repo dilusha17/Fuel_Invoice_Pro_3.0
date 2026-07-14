@@ -16,6 +16,10 @@ return new class extends Migration
             $table->year('year')->default(2000);
             $table->integer('month')->nullable();
             $table->double('income')->nullable();
+            $table->double('vat_percentage')->nullable()->default(0);
+            $table->double('vat_amount')->nullable()->default(0);
+            $table->double('net_amount')->nullable()->default(0);
+            $table->timestamp('deleted_at')->nullable();
         });
     }
 

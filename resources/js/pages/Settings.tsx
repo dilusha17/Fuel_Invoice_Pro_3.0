@@ -14,6 +14,10 @@ import {
     Save,
     Settings as SettingsIcon,
     Truck,
+    Droplets,
+    Plus,
+    Trash2,
+    Pencil,
 } from 'lucide-react';
 import { FloatingInput } from '@/components/ui/FloatingInput';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -44,16 +48,26 @@ interface FuelType {
     vatAmount: number;
 }
 
+interface LubricantType {
+    id: number;
+    name: string;
+    price: number;
+    netPrice: number;
+    vatAmount: number;
+}
+
 interface SettingsProps {
     companyDetails: CompanyDetails;
     currentVat: CurrentVat;
     fuelTypes: FuelType[];
+    lubricantTypes: LubricantType[];
 }
 
 export default function Settings({
     companyDetails,
     currentVat,
     fuelTypes,
+    lubricantTypes,
 }: SettingsProps) {
     const { toast } = useToast();
     const { props } = usePage<{ csrf_token: string }>();
@@ -98,6 +112,303 @@ export default function Settings({
         supplierName: companyDetails.supplierName || '',
         supplierVatNo: companyDetails.supplierVatNo || '',
     });
+
+    // Lubricant Types Management State
+    const [lubricantTypesData, setLubricantTypesData] = useState<LubricantType[]>(lubricantTypes || []);
+    const [newLubricantName, setNewLubricantName] = useState('');
+    const [newLubricantPrice, setNewLubricantPrice] = useState('');
+    const [isAddingLubricant, setIsAddingLubricant] = useState(false);
+    const [editingLubricantId, setEditingLubricantId] = useState<number | null>(null);
+    const [editingLubricantName, setEditingLubricantName] = useState('');
+    const [isDeletingLubricant, setIsDeletingLubricant] = useState<number | null>(null);
+
+    // Lubricant Pricing State
+    const [selectedLubricantId, setSelectedLubricantId] = useState(
+        (lubricantTypes || [])[0]?.id.toString() || '',
+    );
+    const [newLubricantPriceUpdate, setNewLubricantPriceUpdate] = useState('');
+    const [lubricantPriceFromDate, setLubricantPriceFromDate] = useState<Date>(new Date());
+    const [isUpdatingLubricantPrice, setIsUpdatingLubricantPrice] = useState(false);
+    const [lubricantPriceSuccess, setLubricantPriceSuccess] = useState(false);
+
+    // Historical lubricant price lookup
+    const [historicalLubricantDate, setHistoricalLubricantDate] = useState<Date>(new Date());
+    const [historicalLubricantData, setHistoricalLubricantData] = useState<LubricantType | null>(null);
+    const [isLoadingHistoricalLubricant, setIsLoadingHistoricalLubricant] = useState(false);
+
+    const lubricantTypeOptions = lubricantTypesData.map((lt) => ({
+        value: lt.id.toString(),
+        label: lt.name,
+    }));
+
+    const currentLubricantData = lubricantTypesData.find(
+        (lt) => lt.id.toString() === selectedLubricantId,
+    );
+
+    const fetchHistoricalLubricantPrice = async (lubricantTypeId: string, date: Date) => {
+        if (!lubricantTypeId) return;
+        setIsLoadingHistoricalLubricant(true);
+        try {
+            const formatDateLocal = (date: Date): string => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const dateStr = formatDateLocal(date);
+            const response = await fetch(
+                `/api/lubricants/price/${lubricantTypeId}?invoice_date=${dateStr}`,
+            );
+            const data = await response.json();
+
+            if (data.error) {
+                toast({
+                    title: 'No Historical Data',
+                    description: data.error,
+                    variant: 'destructive',
+                });
+                setHistoricalLubricantData(null);
+            } else {
+                const vatResponse = await fetch(`/api/invoice/vat?invoice_date=${dateStr}`);
+                const vatData = await vatResponse.json();
+
+                const vatPercentage = vatData.vatPercentage || 0;
+                const price = data.price || 0;
+
+                const netPrice = Math.round((price / (100 + vatPercentage) * 100) * 100) / 100;
+                const vatAmount = Math.round((price / (100 + vatPercentage) * vatPercentage) * 100) / 100;
+
+                const lubricant = lubricantTypesData.find((lt) => lt.id.toString() === lubricantTypeId);
+
+                setHistoricalLubricantData({
+                    id: parseInt(lubricantTypeId),
+                    name: lubricant?.name || '',
+                    price: price,
+                    netPrice: netPrice,
+                    vatAmount: vatAmount,
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching historical lubricant price:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to fetch historical lubricant price',
+                variant: 'destructive',
+            });
+            setHistoricalLubricantData(null);
+        } finally {
+            setIsLoadingHistoricalLubricant(false);
+        }
+    };
+
+    const handleHistoricalLubricantDateChange = (date: Date | undefined) => {
+        if (date) {
+            setHistoricalLubricantDate(date);
+            fetchHistoricalLubricantPrice(selectedLubricantId, date);
+        }
+    };
+
+    const handleLubricantTypeChange = (lubricantId: string) => {
+        setSelectedLubricantId(lubricantId);
+        fetchHistoricalLubricantPrice(lubricantId, historicalLubricantDate);
+    };
+
+    useEffect(() => {
+        if (selectedLubricantId) {
+            fetchHistoricalLubricantPrice(selectedLubricantId, historicalLubricantDate);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleAddLubricant = async () => {
+        if (!newLubricantName || !newLubricantPrice) return;
+        setIsAddingLubricant(true);
+
+        try {
+            const response = await fetch('/api/lubricants/store', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': props.csrf_token,
+                },
+                body: JSON.stringify({
+                    name: newLubricantName,
+                    price: parseFloat(newLubricantPrice),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setLubricantTypesData((prev) => [...prev, data.lubricantType]);
+                if (!selectedLubricantId) {
+                    setSelectedLubricantId(data.lubricantType.id.toString());
+                }
+                setNewLubricantName('');
+                setNewLubricantPrice('');
+                toast({
+                    title: 'Lubricant Added',
+                    description: `${data.lubricantType.name} has been added successfully`,
+                });
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.message || 'Failed to add lubricant type',
+                    variant: 'destructive',
+                });
+            }
+        } catch {
+            toast({
+                title: 'Error',
+                description: 'Failed to add lubricant type',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsAddingLubricant(false);
+        }
+    };
+
+    const handleEditLubricant = async (id: number) => {
+        if (!editingLubricantName) return;
+
+        try {
+            const response = await fetch(`/api/lubricants/update/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': props.csrf_token,
+                },
+                body: JSON.stringify({ name: editingLubricantName }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setLubricantTypesData((prev) =>
+                    prev.map((lt) => (lt.id === id ? data.lubricantType : lt)),
+                );
+                setEditingLubricantId(null);
+                setEditingLubricantName('');
+                toast({
+                    title: 'Lubricant Updated',
+                    description: 'Lubricant name updated successfully',
+                });
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.message || 'Failed to update lubricant',
+                    variant: 'destructive',
+                });
+            }
+        } catch {
+            toast({
+                title: 'Error',
+                description: 'Failed to update lubricant',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const handleDeleteLubricant = async (id: number) => {
+        setIsDeletingLubricant(id);
+
+        try {
+            const response = await fetch(`/api/lubricants/delete/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': props.csrf_token,
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setLubricantTypesData((prev) => prev.filter((lt) => lt.id !== id));
+                if (selectedLubricantId === id.toString()) {
+                    const remaining = lubricantTypesData.filter((lt) => lt.id !== id);
+                    setSelectedLubricantId(remaining[0]?.id.toString() || '');
+                }
+                toast({
+                    title: 'Lubricant Deleted',
+                    description: 'Lubricant type deleted successfully',
+                });
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.message || 'Failed to delete lubricant',
+                    variant: 'destructive',
+                });
+            }
+        } catch {
+            toast({
+                title: 'Error',
+                description: 'Failed to delete lubricant',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsDeletingLubricant(null);
+        }
+    };
+
+    const handleUpdateLubricantPrice = async () => {
+        if (!currentLubricantData || !newLubricantPriceUpdate) return;
+        setIsUpdatingLubricantPrice(true);
+
+        try {
+            const formatDateLocal = (date: Date): string => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const response = await fetch('/api/lubricants/update-price', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': props.csrf_token,
+                },
+                body: JSON.stringify({
+                    lubricant_type_id: currentLubricantData.id,
+                    price: parseFloat(newLubricantPriceUpdate),
+                    from_date: formatDateLocal(lubricantPriceFromDate),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setLubricantTypesData((prev) =>
+                    prev.map((lt) =>
+                        lt.id === data.lubricantType.id ? data.lubricantType : lt,
+                    ),
+                );
+                toast({
+                    title: 'Price Updated',
+                    description: data.message || `${currentLubricantData.name} price updated to LKR ${newLubricantPriceUpdate}`,
+                });
+                setNewLubricantPriceUpdate('');
+                setLubricantPriceFromDate(new Date());
+                setLubricantPriceSuccess(true);
+                setTimeout(() => setLubricantPriceSuccess(false), 2000);
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.message || 'Failed to update lubricant price',
+                    variant: 'destructive',
+                });
+            }
+        } catch {
+            toast({
+                title: 'Error',
+                description: 'Failed to update lubricant price',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsUpdatingLubricantPrice(false);
+        }
+    };
 
     // Create options for fuel types dropdown
     const fuelTypeOptions = fuelTypesData.map((ft) => ({
@@ -778,6 +1089,293 @@ export default function Settings({
                             )}
                         </button>
                     </div>
+                </div>
+            </div>
+
+            {/* Lubricants Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Lubricant Types Management Card */}
+                <div
+                    className="card-neumorphic p-6 animate-fade-slide-up"
+                    style={{ animationDelay: '0.4s' }}
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 rounded-xl bg-blue-500/10">
+                            <Droplets className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <h2 className="text-lg font-semibold text-foreground">
+                            Lubricant Types
+                        </h2>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Add New Lubricant Form */}
+                        <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
+                            <p className="text-sm font-medium text-muted-foreground">Add New Lubricant</p>
+                            <div className="bg-blue-500/10 rounded-lg p-3 text-xs text-blue-600 dark:text-blue-400">
+                                Please enter 1L price (ex: if 5L lubricant can price = 1000, Create lubricant name = "Lubricant Can", 1L Price = 200)
+                            </div>
+                            <FloatingInput
+                                label="Lubricant Name"
+                                type="text"
+                                value={newLubricantName}
+                                onChange={(e) => setNewLubricantName(e.target.value)}
+                            />
+                            <FloatingInput
+                                label="1L Price (LKR)"
+                                type="number"
+                                step="1"
+                                value={newLubricantPrice}
+                                onChange={(e) => setNewLubricantPrice(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddLubricant}
+                                disabled={isAddingLubricant || !newLubricantName || !newLubricantPrice}
+                                className="btn-success-glow w-full flex items-center justify-center gap-2"
+                            >
+                                {isAddingLubricant ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Adding...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="h-4 w-4" />
+                                        Add Lubricant
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Lubricant Types List */}
+                        {lubricantTypesData.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-muted-foreground">Existing Lubricants</p>
+                                {lubricantTypesData.map((lt) => (
+                                    <div
+                                        key={lt.id}
+                                        className="bg-secondary/50 rounded-xl p-3 flex items-center justify-between"
+                                    >
+                                        {editingLubricantId === lt.id ? (
+                                            <div className="flex items-center gap-2 flex-1 mr-2">
+                                                <input
+                                                    type="text"
+                                                    value={editingLubricantName}
+                                                    onChange={(e) => setEditingLubricantName(e.target.value)}
+                                                    className="floating-input text-sm py-1.5 px-3 flex-1"
+                                                    autoFocus
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleEditLubricant(lt.id);
+                                                        if (e.key === 'Escape') {
+                                                            setEditingLubricantId(null);
+                                                            setEditingLubricantName('');
+                                                        }
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditLubricant(lt.id)}
+                                                    className="p-1.5 rounded-lg hover:bg-green-500/10 transition-colors"
+                                                >
+                                                    <Check className="h-4 w-4 text-green-500" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingLubricantId(null);
+                                                        setEditingLubricantName('');
+                                                    }}
+                                                    className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
+                                                >
+                                                    <X className="h-4 w-4 text-destructive" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <p className="text-sm font-medium text-foreground">
+                                                        {lt.name}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        LKR {formatCurrency(lt.price)}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setEditingLubricantId(lt.id);
+                                                            setEditingLubricantName(lt.name);
+                                                        }}
+                                                        className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteLubricant(lt.id)}
+                                                        disabled={isDeletingLubricant === lt.id}
+                                                        className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
+                                                    >
+                                                        {isDeletingLubricant === lt.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin text-destructive" />
+                                                        ) : (
+                                                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Lubricant Pricing Card */}
+                <div
+                    className="card-neumorphic-elevated p-6 animate-fade-slide-up"
+                    style={{ animationDelay: '0.5s' }}
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 rounded-xl bg-blue-500/10">
+                            <Droplets className="h-5 w-5 text-blue-500" />
+                        </div>
+                        <h2 className="text-lg font-semibold text-foreground">
+                            Lubricant Pricing
+                        </h2>
+                    </div>
+
+                    {lubricantTypesData.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <Droplets className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No lubricant types added yet</p>
+                            <p className="text-xs mt-1">Add lubricant types first to manage pricing</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <SearchableSelect
+                                label="Lubricant Type"
+                                options={lubricantTypeOptions}
+                                value={selectedLubricantId}
+                                onChange={handleLubricantTypeChange}
+                            />
+
+                            <DatePickerField
+                                label="Date"
+                                value={historicalLubricantDate}
+                                onChange={handleHistoricalLubricantDateChange}
+                                placeholder="Select Date"
+                            />
+
+                            {/* Historical / Current Pricing Display */}
+                            {isLoadingHistoricalLubricant ? (
+                                <div className="bg-secondary/50 rounded-xl p-4 flex items-center justify-center">
+                                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                        Loading historical data...
+                                    </span>
+                                </div>
+                            ) : historicalLubricantData ? (
+                                <div className="bg-secondary/50 rounded-xl p-4 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            Price
+                                        </span>
+                                        <span className="font-semibold">
+                                            LKR {formatCurrency(historicalLubricantData.price)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            Net Price
+                                        </span>
+                                        <span className="font-medium">
+                                            LKR {formatCurrency(historicalLubricantData.netPrice)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            VAT Amount
+                                        </span>
+                                        <span className="font-medium">
+                                            LKR {formatCurrency(historicalLubricantData.vatAmount)}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : currentLubricantData ? (
+                                <div className="bg-secondary/50 rounded-xl p-4 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            Current Price
+                                        </span>
+                                        <span className="font-semibold">
+                                            LKR {formatCurrency(currentLubricantData.price)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            Net Price
+                                        </span>
+                                        <span className="font-medium">
+                                            LKR {formatCurrency(currentLubricantData.netPrice)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">
+                                            VAT Amount
+                                        </span>
+                                        <span className="font-medium">
+                                            LKR {formatCurrency(currentLubricantData.vatAmount)}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            <DatePickerField
+                                label="Effective From Date"
+                                value={lubricantPriceFromDate}
+                                onChange={(date) => date && setLubricantPriceFromDate(date)}
+                                placeholder="Select effective date"
+                            />
+
+                            <div className="bg-blue-500/10 rounded-lg p-3 text-xs text-blue-600 dark:text-blue-400">
+                                Please enter 1L price (ex: if 5L lubricant can price = 1000, 1L Price = 200)
+                            </div>
+
+                            <FloatingInput
+                                label="New 1L Price (LKR)"
+                                type="number"
+                                step="1"
+                                value={newLubricantPriceUpdate}
+                                onChange={(e) => setNewLubricantPriceUpdate(e.target.value)}
+                                className="border-2 border-blue-500/30 focus:border-blue-500"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={handleUpdateLubricantPrice}
+                                disabled={isUpdatingLubricantPrice || !newLubricantPriceUpdate}
+                                className="btn-success-glow w-full flex items-center justify-center gap-2"
+                            >
+                                {isUpdatingLubricantPrice ? (
+                                    <>
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                        Updating...
+                                    </>
+                                ) : lubricantPriceSuccess ? (
+                                    <>
+                                        <Check className="h-5 w-5" />
+                                        Updated!
+                                    </>
+                                ) : (
+                                    'Update Price'
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

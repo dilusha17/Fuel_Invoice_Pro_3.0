@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Vehicle;
 use App\Models\FuelType;
+use App\Models\LubricantType;
 use App\Models\InvoiceDaily;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -30,7 +31,7 @@ class ManageInvoiceController extends Controller
         // Get invoices from last 45 days only
         $fortyFiveDaysAgo = now()->subDays(45)->startOfDay();
 
-        $query = InvoiceDaily::with(['vehicle.client', 'fuelType'])
+        $query = InvoiceDaily::with(['vehicle.client', 'fuelType', 'lubricantType'])
             ->where('created_at', '>=', $fortyFiveDaysAgo);
 
         // Apply search filter if provided
@@ -57,7 +58,7 @@ class ManageInvoiceController extends Controller
                 'date' => $invoice->date_added->format('Y-m-d'),
                 'client' => $invoice->vehicle->client->client_name ?? 'N/A',
                 'vehicle' => $invoice->vehicle->vehicle_no ?? 'N/A',
-                'fuelType' => $invoice->fuelType->name ?? 'N/A',
+                'fuelType' => $invoice->getProductName(),
                 'volume' => $invoice->volume,
                 'total' => $invoice->Total,
             ];
@@ -78,7 +79,7 @@ class ManageInvoiceController extends Controller
     public function getInvoiceDetails($id)
     {
         try {
-            $invoice = InvoiceDaily::with(['vehicle.client', 'fuelType'])
+            $invoice = InvoiceDaily::with(['vehicle.client', 'fuelType', 'lubricantType'])
                 ->where('id', $id)
                 ->firstOrFail();
 
@@ -91,12 +92,22 @@ class ManageInvoiceController extends Controller
                 ->select('id as value', 'vehicle_no as label', 'fuel_category_id')
                 ->get();
 
-            // Get fuel types for the vehicle's fuel category
-            $fuelTypes = FuelType::where('fuel_category_id', $invoice->vehicle->fuel_category_id)
-                ->select('id as value', 'name as label', 'price')
-                ->get();
+            $isLubricant = $invoice->lubricant_type_id !== null;
 
-            // Get VAT percentage from the invoice_daily table
+            if ($isLubricant) {
+                $fuelTypes = LubricantType::where('fuel_category_id', 3)
+                    ->select('id as value', 'name as label', 'price')
+                    ->get();
+                $fuelPrice = $invoice->lubricantType->price ?? 0;
+                $fuelTypeId = (string)$invoice->lubricant_type_id;
+            } else {
+                $fuelTypes = FuelType::where('fuel_category_id', $invoice->vehicle->fuel_category_id)
+                    ->select('id as value', 'name as label', 'price')
+                    ->get();
+                $fuelPrice = $invoice->fuelType->price ?? 0;
+                $fuelTypeId = (string)$invoice->fuel_type_id;
+            }
+
             $vatPercentage = $invoice->vat_percentage;
 
             return response()->json([
@@ -106,14 +117,15 @@ class ManageInvoiceController extends Controller
                     'date' => $invoice->date_added->format('Y-m-d'),
                     'clientId' => (string)$invoice->vehicle->client_id,
                     'vehicleId' => (string)$invoice->vehicle_id,
-                    'fuelTypeId' => (string)$invoice->fuel_type_id,
+                    'fuelTypeId' => $fuelTypeId,
                     'volume' => $invoice->volume,
                 ],
                 'clients' => $clients,
                 'vehicles' => $vehicles,
-                'fuelTypes' =>$fuelTypes,
+                'fuelTypes' => $fuelTypes,
                 'vatPercentage' => $vatPercentage,
-                'fuelPrice' => $invoice->fuelType->price,
+                'fuelPrice' => $fuelPrice,
+                'isLubricant' => $isLubricant,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -132,31 +144,44 @@ class ManageInvoiceController extends Controller
             'serial_no' => 'required|string|max:15',
             'date_added' => 'required|date',
             'vehicle_id' => 'required|exists:vehicle,id',
-            'fuel_type_id' => 'required|exists:fuel_type,id',
+            'fuel_type_id' => 'required|numeric',
+            'is_lubricant' => 'sometimes|boolean',
             'volume' => 'required|numeric|min:0',
             'fuel_net_price' => 'required|numeric|min:0',
             'sub_total' => 'required|numeric|min:0',
             'vat_percentage' => 'required|numeric|min:0',
             'vat_amount' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
+            'total' => 'nullable|numeric|min:0',
+            'netTotal' => 'nullable|numeric|min:0',
         ]);
 
         try {
             $invoice = InvoiceDaily::where('id', $id)->firstOrFail();
+            $netTotal = round($request->input('netTotal', $request->input('total', 0)), 2);
+            $isLubricant = $request->input('is_lubricant', false);
 
-            $invoice->update([
+            $updateData = [
                 'serial_no' => $request->serial_no,
                 'date_added' => $request->date_added,
                 'vehicle_id' => $request->vehicle_id,
-                'fuel_type_id' => $request->fuel_type_id,
                 'volume' => round($request->volume, 3),
                 'fuel_net_price' => round($request->fuel_net_price, 2),
                 'sub_total' => round($request->sub_total, 2),
                 'vat_percentage' => round($request->vat_percentage, 2),
                 'vat_amount' => round($request->vat_amount, 2),
-                'Total' => round($request->total, 2),
+                'Total' => $netTotal,
                 'updated_at' => now(),
-            ]);
+            ];
+
+            if ($isLubricant) {
+                $updateData['lubricant_type_id'] = $request->fuel_type_id;
+                $updateData['fuel_type_id'] = null;
+            } else {
+                $updateData['fuel_type_id'] = $request->fuel_type_id;
+                $updateData['lubricant_type_id'] = null;
+            }
+
+            $invoice->update($updateData);
 
             return response()->json([
                 'success' => true,
@@ -200,7 +225,7 @@ class ManageInvoiceController extends Controller
         $search = $request->query('search');
 
         $query = InvoiceDaily::onlyTrashed()
-            ->with(['vehicle.client', 'fuelType']);
+            ->with(['vehicle.client', 'fuelType', 'lubricantType']);
 
         // Apply search filter if provided
         if ($search) {
@@ -225,7 +250,7 @@ class ManageInvoiceController extends Controller
                 'date' => $invoice->date_added->format('Y-m-d'),
                 'client' => $invoice->vehicle->client->client_name ?? 'N/A',
                 'vehicle' => $invoice->vehicle->vehicle_no ?? 'N/A',
-                'fuelType' => $invoice->fuelType->name ?? 'N/A',
+                'fuelType' => $invoice->getProductName(),
                 'volume' => $invoice->volume ?? 0,
                 'total' => $invoice->Total ?? 0,
                 'deletedAt' => $invoice->deleted_at?->format('Y-m-d H:i:s'),

@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('serial_no', 15)->nullable();
             $table->date('date_added')->nullable();
             $table->unsignedBigInteger('vehicle_id');
-            $table->unsignedBigInteger('fuel_type_id');
+            $table->unsignedBigInteger('fuel_type_id')->nullable();
+            $table->unsignedBigInteger('lubricant_type_id')->nullable();
             $table->double('volume')->default(0);
             $table->double('fuel_net_price')->default(0);
             $table->double('sub_total')->default(0);
@@ -34,6 +35,10 @@ return new class extends Migration
             $table->foreign('fuel_type_id')
                 ->references('id')
                 ->on('fuel_type');
+
+            $table->foreign('lubricant_type_id')
+                ->references('id')
+                ->on('lubricant_type');
         });
     }
 

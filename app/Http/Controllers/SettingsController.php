@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Settings;
 use App\Models\Vat;
 use App\Models\FuelType;
+use App\Models\LubricantType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -39,6 +40,23 @@ class SettingsController extends Controller
                 ];
             });
 
+        $lubricantTypes = LubricantType::select('id', 'name', 'price')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($type) use ($latestVat) {
+                $vatPercentage = $latestVat ? $latestVat->vat_percentage : 0;
+                $netPrice = $type->price / (1 + ($vatPercentage / 100));
+                $vatAmount = $type->price - $netPrice;
+
+                return [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                    'price' => $type->price,
+                    'netPrice' => $netPrice,
+                    'vatAmount' => $vatAmount,
+                ];
+            });
+
         return Inertia::render('Settings', [
             'companyDetails' => [
                 'name' => $settings->company_name ?? '',
@@ -55,6 +73,7 @@ class SettingsController extends Controller
                 'toDate' => $latestVat && $latestVat->to_date ? $latestVat->to_date->format('Y-m-d') : null,
             ],
             'fuelTypes' => $fuelTypes,
+            'lubricantTypes' => $lubricantTypes,
         ]);
     }
 

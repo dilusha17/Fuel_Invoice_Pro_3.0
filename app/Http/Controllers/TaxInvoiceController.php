@@ -63,23 +63,20 @@ class TaxInvoiceController extends Controller
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
         $toDate = Carbon::parse($request->to_date)->endOfDay();
 
-        $query = InvoiceDaily::with(['vehicle.client', 'fuelType'])
+        $query = InvoiceDaily::with(['vehicle.client', 'fuelType', 'lubricantType'])
             ->whereHas('vehicle', function ($q) use ($request) {
                 $q->where('client_id', $request->client_id);
             })
             ->where('date_added', '>=', $fromDate)
             ->where('date_added', '<=', $toDate)
-            ->whereNull('deleted_at'); // Exclude soft-deleted records
+            ->whereNull('deleted_at');
 
-        // Filter by specific vehicle if not "all"
         if ($request->vehicle_id && $request->vehicle_id !== 'all') {
             $query->where('vehicle_id', $request->vehicle_id);
         }
 
-        // Calculate grand total for ALL matching records (before pagination), rounding to 2 decimal places
         $grandTotal = round($query->get()->sum('Total'), 2);
 
-        // Paginate results with 20 records per page
         $invoices = $query->orderByRaw('CAST(serial_no AS UNSIGNED) ASC')
             ->paginate(20);
 
@@ -90,7 +87,7 @@ class TaxInvoiceController extends Controller
                 'client' => $invoice->vehicle->client->client_name ?? 'N/A',
                 'vehicle' => $invoice->vehicle->vehicle_no ?? 'N/A',
                 'date' => $invoice->date_added->format('Y-m-d'),
-                'fuelType' => $invoice->fuelType->name ?? 'N/A',
+                'fuelType' => $invoice->getProductName(),
                 'unitPrice' => round($invoice->fuel_net_price, 2),
                 'vatPercent' => $invoice->vat_percentage,
                 'volume' => round($invoice->volume, 3),
@@ -171,13 +168,13 @@ class TaxInvoiceController extends Controller
         $toDate = Carbon::parse($request->to_date)->endOfDay();
 
         // Get invoice records
-        $query = InvoiceDaily::with(['vehicle.client', 'fuelType'])
+        $query = InvoiceDaily::with(['vehicle.client', 'fuelType', 'lubricantType'])
             ->whereHas('vehicle', function ($q) use ($request) {
                 $q->where('client_id', $request->client_id);
             })
             ->where('date_added', '>=', $fromDate)
             ->where('date_added', '<=', $toDate)
-            ->whereNull('deleted_at'); // Exclude soft-deleted records
+            ->whereNull('deleted_at');
 
         if ($request->vehicle_id && $request->vehicle_id !== 'all') {
             $query->where('vehicle_id', $request->vehicle_id);
@@ -204,7 +201,7 @@ class TaxInvoiceController extends Controller
                 'refNo' => $invoice->serial_no,
                 'vehicle' => $invoice->vehicle->vehicle_no ?? 'N/A',
                 'date' => $invoice->date_added->format('Y-m-d'),
-                'fuelType' => $invoice->fuelType->name ?? 'N/A',
+                'fuelType' => $invoice->getProductName(),
                 'unitPrice' => $invoice->fuel_net_price,
                 'vatPercent' => $vatPercent,
                 'vatAmount' => $vatAmount,

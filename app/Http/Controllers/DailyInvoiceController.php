@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Vehicle;
 use App\Models\FuelType;
+use App\Models\LubricantType;
 use App\Models\Vat;
 use App\Models\InvoiceDaily;
 use Illuminate\Http\Request;
@@ -53,17 +54,22 @@ class DailyInvoiceController extends Controller
             return response()->json(['error' => 'Vehicle not found'], 404);
         }
 
-        $fuelTypes = FuelType::where('fuel_category_id', $vehicle->fuel_category_id)
-            ->select('id as value', 'name as label', 'price')
-            ->get()
-            ->map(function ($fuelType) {
-                $fuelType->price = $fuelType->price;
-                return $fuelType;
-            });
+        $isLubricant = $vehicle->fuel_category_id == 3;
+
+        if ($isLubricant) {
+            $fuelTypes = LubricantType::where('fuel_category_id', 3)
+                ->select('id as value', 'name as label', 'price')
+                ->get();
+        } else {
+            $fuelTypes = FuelType::where('fuel_category_id', $vehicle->fuel_category_id)
+                ->select('id as value', 'name as label', 'price')
+                ->get();
+        }
 
         return response()->json([
             'fuelTypes' => $fuelTypes,
-            'fuelCategoryId' => $vehicle->fuel_category_id
+            'fuelCategoryId' => $vehicle->fuel_category_id,
+            'isLubricant' => $isLubricant,
         ]);
     }
 
@@ -140,28 +146,51 @@ class DailyInvoiceController extends Controller
             'serial_no' => 'required|string|max:15',
             'date_added' => 'required|date',
             'vehicle_id' => 'required|exists:vehicle,id',
-            'fuel_type_id' => 'required|exists:fuel_type,id',
+            'fuel_type_id' => 'required|numeric',
+            'is_lubricant' => 'sometimes|boolean',
             'volume' => 'required|numeric|min:0',
             'fuel_net_price' => 'required|numeric|min:0',
             'sub_total' => 'required|numeric|min:0',
             'vat_percentage' => 'required|numeric|min:0',
             'vat_amount' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
+            'netTotal' => 'required|numeric|min:0',
         ]);
 
-        $invoice = InvoiceDaily::create([
+        $isLubricant = $request->input('is_lubricant', false);
+        if ($isLubricant) {
+            if (!LubricantType::find($request->fuel_type_id)) {
+                return response()->json(['message' => 'Invalid lubricant type'], 422);
+            }
+        } else {
+            if (!FuelType::find($request->fuel_type_id)) {
+                return response()->json(['message' => 'Invalid fuel type'], 422);
+            }
+        }
+
+        $netTotal = round($request->input('netTotal', $request->input('total', 0)), 2);
+
+        $invoiceData = [
             'serial_no' => $request->serial_no,
             'date_added' => $request->date_added,
             'vehicle_id' => $request->vehicle_id,
-            'fuel_type_id' => $request->fuel_type_id,
             'volume' => round($request->volume, 3),
             'fuel_net_price' => round($request->fuel_net_price, 2),
             'sub_total' => round($request->sub_total, 2),
             'vat_percentage' => round($request->vat_percentage, 2),
             'vat_amount' => round($request->vat_amount, 2),
-            'Total' => round($request->total, 2),
+            'Total' => $netTotal,
             'created_at' => now(),
-        ]);
+        ];
+
+        if ($isLubricant) {
+            $invoiceData['lubricant_type_id'] = $request->fuel_type_id;
+            $invoiceData['fuel_type_id'] = null;
+        } else {
+            $invoiceData['fuel_type_id'] = $request->fuel_type_id;
+            $invoiceData['lubricant_type_id'] = null;
+        }
+
+        $invoice = InvoiceDaily::create($invoiceData);
 
         return response()->json([
             'success' => true,

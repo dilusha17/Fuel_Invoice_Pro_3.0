@@ -74,6 +74,7 @@ export default function ManageInvoices() {
     >([]);
     const [vatPercentage, setVatPercentage] = useState(0);
     const [fuelPrice, setFuelPrice] = useState(0);
+    const [isLubricant, setIsLubricant] = useState(false);
     const [inputMode, setInputMode] = useState<'volume' | 'totalPrice'>(
         'volume',
     );
@@ -258,6 +259,9 @@ export default function ManageInvoices() {
                 setVehicles(vehiclesData);
                 setFuelTypes(fuelTypesData);
 
+                const lubricant = data.isLubricant || false;
+                setIsLubricant(lubricant);
+
                 const formData = {
                     serialNo: data.invoice.serialNo,
                     date: new Date(data.invoice.date),
@@ -268,17 +272,20 @@ export default function ManageInvoices() {
                     totalPrice: '',
                 };
 
-                console.log('Setting form data:', formData);
-                console.log('Clients:', clientsData);
-                console.log('Vehicles:', vehiclesData);
-                console.log('Fuel types:', fuelTypesData);
-
                 setEditFormData(formData);
                 setInputMode('volume');
 
-                // Fetch VAT and fuel price for the invoice date
-                fetchVatForDate(formData.date);
-                fetchFuelPrice(String(data.invoice.fuelTypeId), formData.date);
+                // Set VAT and fuel price from response
+                if (data.vatPercentage !== undefined) {
+                    setVatPercentage(data.vatPercentage);
+                } else {
+                    fetchVatForDate(formData.date);
+                }
+                if (data.fuelPrice !== undefined) {
+                    setFuelPrice(data.fuelPrice);
+                } else {
+                    fetchFuelPrice(String(data.invoice.fuelTypeId), formData.date, lubricant);
+                }
 
                 // Reset flag after a short delay to allow state to update
                 setTimeout(() => setIsInitialLoad(false), 100);
@@ -330,12 +337,14 @@ export default function ManageInvoices() {
                         date_added: formatDateLocal(editFormData.date),
                         vehicle_id: editFormData.vehicle,
                         fuel_type_id: editFormData.fuelType,
+                        is_lubricant: isLubricant,
                         volume: calculatedValues.volume,
                         fuel_net_price: calculatedValues.fuelNetPrice,
                         sub_total: calculatedValues.subTotal,
                         vat_percentage: vatPercentage,
                         vat_amount: calculatedValues.vatAmount,
                         total: calculatedValues.total,
+                        netTotal: calculatedValues.netTotal,
                     }),
                 },
             );
@@ -436,25 +445,32 @@ export default function ManageInvoices() {
                     }),
                 ),
             );
+            const lubricant = data.isLubricant || false;
+            setIsLubricant(lubricant);
+            if (lubricant) {
+                setInputMode('volume');
+                setEditFormData((prev) => ({ ...prev, volume: '', totalPrice: '' }));
+            }
         } catch (error) {
             console.error('Error fetching fuel types:', error);
         }
     };
 
-    const fetchFuelPrice = async (fuelTypeId: string, date: Date) => {
+    const fetchFuelPrice = async (fuelTypeId: string, date: Date, isLub?: boolean) => {
         try {
-            // Format date in local timezone (YYYY-MM-DD)
-            const formatDateLocal = (date: Date): string => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
+            const formatDateLocal = (d: Date): string => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
                 return `${year}-${month}-${day}`;
             };
 
             const invoiceDate = formatDateLocal(date);
-            const response = await fetch(
-                `/api/invoice/fuel-price/${fuelTypeId}?invoice_date=${invoiceDate}`,
-            );
+            const lubricant = isLub !== undefined ? isLub : isLubricant;
+            const url = lubricant
+                ? `/api/lubricants/price/${fuelTypeId}?invoice_date=${invoiceDate}`
+                : `/api/invoice/fuel-price/${fuelTypeId}?invoice_date=${invoiceDate}`;
+            const response = await fetch(url);
             const data = await response.json();
 
             if (data.error) {
@@ -513,7 +529,6 @@ export default function ManageInvoices() {
         }
     };
 
-    // Centralized calculation function
     const calculateInvoiceValues = (params: {
         inputMode: 'volume' | 'totalPrice';
         volume: string;
@@ -523,36 +538,35 @@ export default function ManageInvoices() {
     }) => {
         const { inputMode, volume, totalPrice, fuelPrice, vatPercentage } = params;
 
-        // Calculate and round base prices (2 decimal places)
-        const fuelNetPrice = Math.round((fuelPrice / (100 + vatPercentage) * 100) * 100) / 100;
-        const vatAmountPerLiter = Math.round((fuelPrice / (100 + vatPercentage) * vatPercentage) * 100) / 100;
+        const fuelNetPrice = Math.round(((fuelPrice / (100 + vatPercentage)) * 100) * 100) / 100;
 
         let calculatedVolume = 0;
         let calculatedTotal = 0;
         let calculatedSubTotal = 0;
         let calculatedVatAmount = 0;
+        let calculatedNetTotal = 0;
 
         if (inputMode === 'volume') {
-            // Calculate from volume
             calculatedVolume = parseFloat(volume) || 0;
-            calculatedTotal = Math.round(fuelPrice * calculatedVolume * 100) / 100;
-            calculatedSubTotal = Math.round(fuelNetPrice * calculatedVolume * 100) / 100;
-            calculatedVatAmount = Math.round(vatAmountPerLiter * calculatedVolume * 100) / 100;
+            calculatedSubTotal = Math.round((fuelNetPrice * calculatedVolume) * 100) / 100;
+            calculatedTotal = Math.round((calculatedSubTotal / 100 * (100 + vatPercentage)) * 100) / 100;
+            calculatedVatAmount = Math.round((calculatedSubTotal / 100 * vatPercentage) * 100) / 100;
+            calculatedNetTotal = calculatedTotal;
         } else {
-            // Calculate from total price
             calculatedTotal = parseFloat(totalPrice) || 0;
             calculatedVolume = fuelPrice > 0 ? Math.round((calculatedTotal / fuelPrice) * 1000) / 1000 : 0;
             calculatedSubTotal = Math.round((fuelNetPrice * calculatedVolume) * 100) / 100;
-            calculatedVatAmount = Math.round((vatAmountPerLiter * calculatedVolume) * 100) / 100;
+            calculatedVatAmount = Math.round(((calculatedSubTotal / 100) * vatPercentage) * 100) / 100;
+            calculatedNetTotal = Math.round(((calculatedSubTotal / 100) * (100 + vatPercentage)) * 100) / 100;
         }
 
-        // Return rounded values
         return {
-            volume: calculatedVolume,        // Already rounded to 3 decimal places
-            total: calculatedTotal,          // Already rounded to 2 decimal places
-            subTotal: calculatedSubTotal,    // Already rounded to 2 decimal places
-            vatAmount: calculatedVatAmount,  // Already rounded to 2 decimal places
-            fuelNetPrice: fuelNetPrice,      // Already rounded to 2 decimal places
+            volume: calculatedVolume,
+            total: calculatedTotal,
+            subTotal: calculatedSubTotal,
+            vatAmount: calculatedVatAmount,
+            netTotal: calculatedNetTotal,
+            fuelNetPrice: fuelNetPrice,
         };
     };
 
@@ -854,6 +868,7 @@ export default function ManageInvoices() {
                     setEditInvoiceId(null);
                     setIsInitialLoad(false);
                     setInputMode('volume');
+                    setIsLubricant(false);
                 }}
             >
                 <DialogContent className="card-neumorphic-elevated border-none max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -959,7 +974,7 @@ export default function ManageInvoices() {
                                         onValueChange={(
                                             value: 'volume' | 'totalPrice',
                                         ) => {
-                                            if (value) {
+                                            if (value && !isLubricant) {
                                                 setInputMode(value);
                                                 setEditFormData({
                                                     ...editFormData,
@@ -979,6 +994,7 @@ export default function ManageInvoices() {
                                         <ToggleGroupItem
                                             value="totalPrice"
                                             className="px-4 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
+                                            disabled={isLubricant}
                                         >
                                             Total Price
                                         </ToggleGroupItem>

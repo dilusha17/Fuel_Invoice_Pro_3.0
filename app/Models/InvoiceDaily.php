@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\LubricantType;
 
 class InvoiceDaily extends Model
 {
@@ -21,6 +22,7 @@ class InvoiceDaily extends Model
         'date_added',
         'vehicle_id',
         'fuel_type_id',
+        'lubricant_type_id',
         'volume',
         'fuel_net_price',
         'sub_total',
@@ -45,6 +47,7 @@ class InvoiceDaily extends Model
         'deleted_at' => 'datetime',
         'vehicle_id' => 'integer',
         'fuel_type_id' => 'integer',
+        'lubricant_type_id' => 'integer',
     ];
 
     /**
@@ -61,5 +64,18 @@ class InvoiceDaily extends Model
     public function fuelType(): BelongsTo
     {
         return $this->belongsTo(FuelType::class, 'fuel_type_id', 'id');
+    }
+
+    public function lubricantType(): BelongsTo
+    {
+        return $this->belongsTo(LubricantType::class, 'lubricant_type_id', 'id');
+    }
+
+    public function getProductName(): string
+    {
+        if ($this->lubricant_type_id) {
+            return $this->lubricantType->name ?? 'N/A';
+        }
+        return $this->fuelType->name ?? 'N/A';
     }
 }

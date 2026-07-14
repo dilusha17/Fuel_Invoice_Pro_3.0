@@ -28,6 +28,10 @@ class FuelCategorySeeder extends Seeder
                 'id' => 2,
                 'name' => 'Diesel',
             ],
+            [
+                'id' => 3,
+                'name' => 'Lubricants',
+            ],
         ];
         foreach ($initialFuelCategory as $fuelCategory) {
             FuelCategory::updateOrCreate(

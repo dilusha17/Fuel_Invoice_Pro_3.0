@@ -84,7 +84,8 @@ class TaxInvoiceHistoryController extends Controller
             ->join('invoice_daily', 'tax_invoice_invoice_nos.invoice_daily_id', '=', 'invoice_daily.id')
             ->join('vehicle', 'invoice_daily.vehicle_id', '=', 'vehicle.id')
             ->join('client', 'vehicle.client_id', '=', 'client.id')
-            ->join('fuel_type', 'invoice_daily.fuel_type_id', '=', 'fuel_type.id')
+            ->leftJoin('fuel_type', 'invoice_daily.fuel_type_id', '=', 'fuel_type.id')
+            ->leftJoin('lubricant_type', 'invoice_daily.lubricant_type_id', '=', 'lubricant_type.id')
             ->where('tax_invoice_invoice_nos.tax_invoice_id', $request->tax_invoice_id)
             ->whereNull('invoice_daily.deleted_at')
             ->select(
@@ -93,7 +94,7 @@ class TaxInvoiceHistoryController extends Controller
                 'client.client_name as client',
                 'vehicle.vehicle_no as vehicle',
                 'invoice_daily.date_added as date',
-                'fuel_type.name as fuelType',
+                DB::raw('COALESCE(lubricant_type.name, fuel_type.name) as fuelType'),
                 'invoice_daily.fuel_net_price as unitPrice',
                 'invoice_daily.vat_percentage as vatPercent',
                 'invoice_daily.volume',
@@ -184,14 +185,15 @@ class TaxInvoiceHistoryController extends Controller
             $invoices = DB::table('tax_invoice_invoice_nos')
                 ->join('invoice_daily', 'tax_invoice_invoice_nos.invoice_daily_id', '=', 'invoice_daily.id')
                 ->join('vehicle', 'invoice_daily.vehicle_id', '=', 'vehicle.id')
-                ->join('fuel_type', 'invoice_daily.fuel_type_id', '=', 'fuel_type.id')
+                ->leftJoin('fuel_type', 'invoice_daily.fuel_type_id', '=', 'fuel_type.id')
+                ->leftJoin('lubricant_type', 'invoice_daily.lubricant_type_id', '=', 'lubricant_type.id')
                 ->where('tax_invoice_invoice_nos.tax_invoice_id', $request->tax_invoice_id)
                 ->whereNull('invoice_daily.deleted_at')
                 ->select(
                     'invoice_daily.serial_no as refNo',
                     'vehicle.vehicle_no as vehicle',
                     'invoice_daily.date_added as date',
-                    'fuel_type.name as fuelType',
+                    DB::raw('COALESCE(lubricant_type.name, fuel_type.name) as fuelType'),
                     'invoice_daily.fuel_net_price as unitPrice',
                     'invoice_daily.vat_percentage as vat_percentage',
                     'invoice_daily.vat_amount as vatAmount',

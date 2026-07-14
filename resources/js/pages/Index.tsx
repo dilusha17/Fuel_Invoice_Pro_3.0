@@ -37,6 +37,7 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
     const [fuelTypes, setFuelTypes] = useState<FuelTypeOption[]>([]);
     const [fuelPrice, setFuelPrice] = useState(0);
     const [vatPercentage, setVatPercentage] = useState(initialVatPercentage);
+    const [isLubricant, setIsLubricant] = useState(false);
 
     const [inputMode, setInputMode] = useState<'volume' | 'totalPrice'>(
         'volume',
@@ -134,6 +135,12 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
             );
             const data = await response.json();
             setFuelTypes(data.fuelTypes);
+            const lubricant = data.isLubricant || false;
+            setIsLubricant(lubricant);
+            if (lubricant) {
+                setInputMode('volume');
+                setFormData((prev) => ({ ...prev, volume: '', totalPrice: '' }));
+            }
         } catch (error) {
             console.error('Error fetching fuel types:', error);
             toast({
@@ -146,7 +153,6 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
 
     const fetchFuelPrice = async (fuelTypeId: string) => {
         try {
-            // Format date in local timezone (YYYY-MM-DD)
             const formatDateLocal = (date: Date): string => {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -155,9 +161,10 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
             };
 
             const invoiceDate = formatDateLocal(formData.date);
-            const response = await fetch(
-                `/api/invoice/fuel-price/${fuelTypeId}?invoice_date=${invoiceDate}`,
-            );
+            const url = isLubricant
+                ? `/api/lubricants/price/${fuelTypeId}?invoice_date=${invoiceDate}`
+                : `/api/invoice/fuel-price/${fuelTypeId}?invoice_date=${invoiceDate}`;
+            const response = await fetch(url);
             const data = await response.json();
 
             if (data.error) {
@@ -217,25 +224,27 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
     };
 
     const FuelNetPrice = Math.round(((fuelPrice / (100 + vatPercentage)) * 100) * 100) / 100;
-    const vatAmountPerLiter = Math.round(((fuelPrice / (100 + vatPercentage)) * vatPercentage) * 100) / 100;
 
     // Calculation values
     let volume = 0;
     let total = 0;
     let subTotal = 0;
     let vatAmount = 0;
+    let netTotal = 0;
 
     if (inputMode === 'volume') {
         volume = parseFloat(formData.volume) || 0;
-        total = Math.round(fuelPrice * volume * 100) / 100;
-        subTotal = Math.round(FuelNetPrice * volume * 100) / 100;
-        vatAmount = Math.round(vatAmountPerLiter * volume * 100) / 100;
+        subTotal = Math.round((FuelNetPrice * volume) * 100) / 100;
+        total = Math.round((subTotal / 100 * (100 + vatPercentage)) * 100) / 100;
+        vatAmount = Math.round((subTotal / 100 * (vatPercentage)) * 100) / 100;
+        netTotal = total;
     } else {
         // When inputMode is 'totalPrice', calculate volume from total price
         total = parseFloat(formData.totalPrice) || 0;
-        volume = fuelPrice > 0 ? Math.round((total / fuelPrice) * 1000) / 1000 : 0;
+        volume = Math.round((total / fuelPrice) * 1000) / 1000;
         subTotal = Math.round((FuelNetPrice * volume) * 100) / 100;
-        vatAmount = Math.round((vatAmountPerLiter * volume) * 100) / 100;
+        vatAmount = Math.round(((subTotal / 100) * vatPercentage) * 100) / 100;
+        netTotal = Math.round(((subTotal / 100) * (100 + vatPercentage)) * 100) / 100;
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -256,12 +265,14 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                 date_added: formatDateLocal(formData.date),
                 vehicle_id: formData.vehicle,
                 fuel_type_id: formData.fuelType,
-                volume: Math.round(volume * 1000) / 1000, // Round to 3 decimal places
+                is_lubricant: isLubricant,
+                volume: Math.round(volume * 1000) / 1000,
                 fuel_net_price: FuelNetPrice,
                 sub_total: subTotal,
                 vat_percentage: vatPercentage,
                 vat_amount: vatAmount,
-                total: total,
+                total: netTotal,
+                netTotal: netTotal,
             };
 
             const response = await fetch('/api/invoice/store', {
@@ -302,6 +313,7 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                 totalPrice: '',
             });
             setInputMode('volume');
+            setIsLubricant(false);
             setVehicles([]);
             setFuelTypes([]);
             setFuelPrice(0);
@@ -412,9 +424,8 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                                 onValueChange={(
                                     value: 'volume' | 'totalPrice',
                                 ) => {
-                                    if (value) {
+                                    if (value && !isLubricant) {
                                         setInputMode(value);
-                                        // Clear both fields when switching
                                         setFormData({
                                             ...formData,
                                             volume: '',
@@ -432,6 +443,7 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                                 </ToggleGroupItem>
                                 <ToggleGroupItem
                                     value="totalPrice"
+                                    disabled={isLubricant}
                                     className="px-4 data-[state=on]:bg-blue-500 data-[state=on]:text-white"
                                 >
                                     Total Price
