@@ -23,6 +23,7 @@ class InvoiceDaily extends Model
         'vehicle_id',
         'fuel_type_id',
         'lubricant_type_id',
+        'input_method',
         'volume',
         'fuel_net_price',
         'sub_total',

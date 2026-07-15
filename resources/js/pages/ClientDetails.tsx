@@ -42,6 +42,7 @@ const vehicleTypes = [
     { value: 'lorry', label: 'Lorry' },
     { value: 'barrels', label: 'Barrels' },
     { value: 'lubricant', label: 'Lubricant' },
+    { value: 'can', label: 'Can' },
 ];
 
 interface Client {

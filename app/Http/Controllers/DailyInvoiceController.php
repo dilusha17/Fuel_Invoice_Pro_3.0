@@ -148,12 +148,13 @@ class DailyInvoiceController extends Controller
             'vehicle_id' => 'required|exists:vehicle,id',
             'fuel_type_id' => 'required|numeric',
             'is_lubricant' => 'sometimes|boolean',
+            'input_method' => 'sometimes|string|in:volume,totalPrice',
             'volume' => 'required|numeric|min:0',
             'fuel_net_price' => 'required|numeric|min:0',
             'sub_total' => 'required|numeric|min:0',
             'vat_percentage' => 'required|numeric|min:0',
             'vat_amount' => 'required|numeric|min:0',
-            'netTotal' => 'required|numeric|min:0',
+            'total' => 'required|numeric|min:0',
         ]);
 
         $isLubricant = $request->input('is_lubricant', false);
@@ -167,18 +168,17 @@ class DailyInvoiceController extends Controller
             }
         }
 
-        $netTotal = round($request->input('netTotal', $request->input('total', 0)), 2);
-
         $invoiceData = [
             'serial_no' => $request->serial_no,
             'date_added' => $request->date_added,
             'vehicle_id' => $request->vehicle_id,
+            'input_method' => $request->input('input_method', 'volume'),
             'volume' => round($request->volume, 3),
             'fuel_net_price' => round($request->fuel_net_price, 2),
             'sub_total' => round($request->sub_total, 2),
             'vat_percentage' => round($request->vat_percentage, 2),
             'vat_amount' => round($request->vat_amount, 2),
-            'Total' => $netTotal,
+            'Total' => round($request->total, 2),
             'created_at' => now(),
         ];
 

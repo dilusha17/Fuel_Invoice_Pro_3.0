@@ -262,18 +262,21 @@ export default function ManageInvoices() {
                 const lubricant = data.isLubricant || false;
                 setIsLubricant(lubricant);
 
+                const savedInputMethod = data.invoice.inputMethod || 'volume';
+                const activeMode = lubricant ? 'volume' : savedInputMethod;
+
                 const formData = {
                     serialNo: data.invoice.serialNo,
                     date: new Date(data.invoice.date),
                     client: String(data.invoice.clientId),
                     vehicle: String(data.invoice.vehicleId),
                     fuelType: String(data.invoice.fuelTypeId),
-                    volume: data.invoice.volume.toString(),
-                    totalPrice: '',
+                    volume: activeMode === 'volume' ? data.invoice.volume.toString() : '',
+                    totalPrice: activeMode === 'totalPrice' ? data.invoice.total.toString() : '',
                 };
 
                 setEditFormData(formData);
-                setInputMode('volume');
+                setInputMode(activeMode);
 
                 // Set VAT and fuel price from response
                 if (data.vatPercentage !== undefined) {
@@ -338,13 +341,13 @@ export default function ManageInvoices() {
                         vehicle_id: editFormData.vehicle,
                         fuel_type_id: editFormData.fuelType,
                         is_lubricant: isLubricant,
+                        input_method: inputMode,
                         volume: calculatedValues.volume,
                         fuel_net_price: calculatedValues.fuelNetPrice,
                         sub_total: calculatedValues.subTotal,
                         vat_percentage: vatPercentage,
                         vat_amount: calculatedValues.vatAmount,
                         total: calculatedValues.total,
-                        netTotal: calculatedValues.total,
                     }),
                 },
             );

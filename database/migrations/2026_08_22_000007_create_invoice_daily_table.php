@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('vehicle_id');
             $table->unsignedBigInteger('fuel_type_id')->nullable();
             $table->unsignedBigInteger('lubricant_type_id')->nullable();
+            $table->string('input_method')->default('volume');
             $table->double('volume')->default(0);
             $table->double('fuel_net_price')->default(0);
             $table->double('sub_total')->default(0);

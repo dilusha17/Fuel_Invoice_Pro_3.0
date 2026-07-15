@@ -75,9 +75,9 @@ class TaxInvoiceController extends Controller
             $query->where('vehicle_id', $request->vehicle_id);
         }
 
-        $grandTotal = round($query->get()->sum('Total'), 2);
+        $grandTotal = $query->get()->sum('Total');
 
-        $invoices = $query->orderByRaw('CAST(serial_no AS UNSIGNED) ASC')
+        $invoices = $query->orderByRaw("REGEXP_REPLACE(serial_no, '[0-9]+$','') ASC, CAST(REGEXP_SUBSTR(serial_no, '[0-9]+$') AS UNSIGNED) ASC, serial_no ASC")
             ->paginate(20);
 
         $records = $invoices->map(function ($invoice) {
@@ -180,7 +180,7 @@ class TaxInvoiceController extends Controller
             $query->where('vehicle_id', $request->vehicle_id);
         }
 
-        $invoices = $query->orderByRaw('CAST(serial_no AS UNSIGNED) ASC')
+        $invoices = $query->orderByRaw("REGEXP_REPLACE(serial_no, '[0-9]+$','') ASC, CAST(REGEXP_SUBSTR(serial_no, '[0-9]+$') AS UNSIGNED) ASC, serial_no ASC")
             ->get();
 
         $records = $invoices->map(function ($invoice) {

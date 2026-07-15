@@ -264,6 +264,7 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                 vehicle_id: formData.vehicle,
                 fuel_type_id: formData.fuelType,
                 is_lubricant: isLubricant,
+                input_method: inputMode,
                 volume: Math.round(volume * 1000) / 1000,
                 fuel_net_price: fuelNetPrice,
                 sub_total: subTotal,
