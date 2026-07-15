@@ -344,7 +344,7 @@ export default function ManageInvoices() {
                         vat_percentage: vatPercentage,
                         vat_amount: calculatedValues.vatAmount,
                         total: calculatedValues.total,
-                        netTotal: calculatedValues.netTotal,
+                        netTotal: calculatedValues.total,
                     }),
                 },
             );
@@ -538,26 +538,24 @@ export default function ManageInvoices() {
     }) => {
         const { inputMode, volume, totalPrice, fuelPrice, vatPercentage } = params;
 
-        const fuelNetPrice = Math.round(((fuelPrice / (100 + vatPercentage)) * 100) * 100) / 100;
+        const fuelNetPrice = ((fuelPrice / (100 + vatPercentage)) * 100);
+        const fuelVatPrice = ((fuelPrice / (100 + vatPercentage)) * vatPercentage);
 
         let calculatedVolume = 0;
         let calculatedTotal = 0;
         let calculatedSubTotal = 0;
         let calculatedVatAmount = 0;
-        let calculatedNetTotal = 0;
 
         if (inputMode === 'volume') {
             calculatedVolume = parseFloat(volume) || 0;
-            calculatedSubTotal = Math.round((fuelNetPrice * calculatedVolume) * 100) / 100;
-            calculatedTotal = Math.round((calculatedSubTotal / 100 * (100 + vatPercentage)) * 100) / 100;
-            calculatedVatAmount = Math.round((calculatedSubTotal / 100 * vatPercentage) * 100) / 100;
-            calculatedNetTotal = calculatedTotal;
+            calculatedSubTotal = fuelNetPrice * calculatedVolume;
+            calculatedTotal = fuelPrice * calculatedVolume;
+            calculatedVatAmount = fuelVatPrice * calculatedVolume;
         } else {
             calculatedTotal = parseFloat(totalPrice) || 0;
-            calculatedVolume = fuelPrice > 0 ? Math.round((calculatedTotal / fuelPrice) * 1000) / 1000 : 0;
-            calculatedSubTotal = Math.round((fuelNetPrice * calculatedVolume) * 100) / 100;
-            calculatedVatAmount = Math.round(((calculatedSubTotal / 100) * vatPercentage) * 100) / 100;
-            calculatedNetTotal = Math.round(((calculatedSubTotal / 100) * (100 + vatPercentage)) * 100) / 100;
+            calculatedVolume = fuelPrice > 0 ? calculatedTotal / fuelPrice : 0;
+            calculatedSubTotal = (calculatedTotal / (100 + vatPercentage)) * 100;
+            calculatedVatAmount = (calculatedTotal / (100 + vatPercentage)) * vatPercentage;
         }
 
         return {
@@ -565,7 +563,6 @@ export default function ManageInvoices() {
             total: calculatedTotal,
             subTotal: calculatedSubTotal,
             vatAmount: calculatedVatAmount,
-            netTotal: calculatedNetTotal,
             fuelNetPrice: fuelNetPrice,
         };
     };

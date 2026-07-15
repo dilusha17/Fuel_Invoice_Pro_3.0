@@ -223,28 +223,26 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
         }
     };
 
-    const FuelNetPrice = Math.round(((fuelPrice / (100 + vatPercentage)) * 100) * 100) / 100;
+    const fuelNetPrice = ((fuelPrice / (100 + vatPercentage)) * 100);
+    const fuelVatPrice = ((fuelPrice / (100 + vatPercentage)) * vatPercentage);
 
     // Calculation values
     let volume = 0;
     let total = 0;
     let subTotal = 0;
     let vatAmount = 0;
-    let netTotal = 0;
 
     if (inputMode === 'volume') {
         volume = parseFloat(formData.volume) || 0;
-        subTotal = Math.round((FuelNetPrice * volume) * 100) / 100;
-        total = Math.round((subTotal / 100 * (100 + vatPercentage)) * 100) / 100;
-        vatAmount = Math.round((subTotal / 100 * (vatPercentage)) * 100) / 100;
-        netTotal = total;
+        subTotal = fuelNetPrice * volume;
+        total = fuelPrice * volume;
+        vatAmount = fuelVatPrice * volume;
     } else {
         // When inputMode is 'totalPrice', calculate volume from total price
         total = parseFloat(formData.totalPrice) || 0;
-        volume = Math.round((total / fuelPrice) * 1000) / 1000;
-        subTotal = Math.round((FuelNetPrice * volume) * 100) / 100;
-        vatAmount = Math.round(((subTotal / 100) * vatPercentage) * 100) / 100;
-        netTotal = Math.round(((subTotal / 100) * (100 + vatPercentage)) * 100) / 100;
+        volume = total / fuelPrice;
+        subTotal = (total / (100 + vatPercentage)) * 100;
+        vatAmount = (total / (100 + vatPercentage)) * vatPercentage;
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -267,12 +265,11 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                 fuel_type_id: formData.fuelType,
                 is_lubricant: isLubricant,
                 volume: Math.round(volume * 1000) / 1000,
-                fuel_net_price: FuelNetPrice,
+                fuel_net_price: fuelNetPrice,
                 sub_total: subTotal,
                 vat_percentage: vatPercentage,
                 vat_amount: vatAmount,
-                total: netTotal,
-                netTotal: netTotal,
+                total: total,
             };
 
             const response = await fetch('/api/invoice/store', {
@@ -523,7 +520,7 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                                     Fuel Net Price
                                 </span>
                                 <span className="font-medium">
-                                    LKR {formatCurrency(FuelNetPrice)}
+                                    LKR {formatCurrency(fuelNetPrice)}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-xs">
