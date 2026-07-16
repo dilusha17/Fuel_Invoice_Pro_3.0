@@ -453,7 +453,7 @@ export default function TaxInvoice() {
                     Tax Invoice
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                    Generate Rax Reports and Print Tax Invoices
+                    Generate Tax Reports and Print Tax Invoices
                 </p>
             </div>
 

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->double('unit_price', 15, 4)->default(0);
             $table->double('amount', 15, 4)->default(0);
             $table->double('discount', 15, 4)->default(0);
+            $table->double('eva_allowance', 15, 4)->default(0);
             $table->double('invoice_amount', 15, 4)->default(0);
             $table->double('vat_percentage', 8, 4)->default(0);
             $table->double('vat_amount', 15, 4)->default(0);

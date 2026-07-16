@@ -117,6 +117,7 @@ export default function Settings({
     const [lubricantTypesData, setLubricantTypesData] = useState<LubricantType[]>(lubricantTypes || []);
     const [newLubricantName, setNewLubricantName] = useState('');
     const [newLubricantPrice, setNewLubricantPrice] = useState('');
+    const [newLubricantEffectiveDate, setNewLubricantEffectiveDate] = useState<Date>(new Date());
     const [isAddingLubricant, setIsAddingLubricant] = useState(false);
     const [editingLubricantId, setEditingLubricantId] = useState<number | null>(null);
     const [editingLubricantName, setEditingLubricantName] = useState('');
@@ -235,6 +236,13 @@ export default function Settings({
                 body: JSON.stringify({
                     name: newLubricantName,
                     price: parseFloat(newLubricantPrice),
+                    from_date: (() => {
+                        const d = newLubricantEffectiveDate;
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${y}-${m}-${day}`;
+                    })(),
                 }),
             });
 
@@ -247,6 +255,7 @@ export default function Settings({
                 }
                 setNewLubricantName('');
                 setNewLubricantPrice('');
+                setNewLubricantEffectiveDate(new Date());
                 toast({
                     title: 'Lubricant Added',
                     description: `${data.lubricantType.name} has been added successfully`,
@@ -1127,6 +1136,11 @@ export default function Settings({
                                 step="1"
                                 value={newLubricantPrice}
                                 onChange={(e) => setNewLubricantPrice(e.target.value)}
+                            />
+                            <DatePickerField
+                                label="Effective Date"
+                                value={newLubricantEffectiveDate}
+                                onChange={(date) => setNewLubricantEffectiveDate(date || new Date())}
                             />
                             <button
                                 type="button"

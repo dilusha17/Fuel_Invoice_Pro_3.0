@@ -62,6 +62,8 @@ export default function Purchase({
     const [unitPrice, setUnitPrice] = useState('');
     const [discount, setDiscount] = useState('');
     const [discountDisplay, setDiscountDisplay] = useState('');
+    const [evaAllowance, setEvaAllowance] = useState('');
+    const [evaAllowanceDisplay, setEvaAllowanceDisplay] = useState('');
 
     // Loading / success states
     const [isLoadingFuelTypes, setIsLoadingFuelTypes] = useState(false);
@@ -80,8 +82,9 @@ export default function Purchase({
 
     const invoiceAmount = useMemo(() => {
         const d = parseFloat(discount) || 0;
-        return Math.max(0, amount - d);
-    }, [amount, discount]);
+        const eva = parseFloat(evaAllowance) || 0;
+        return Math.max(0, amount - d - eva);
+    }, [amount, discount, evaAllowance]);
 
     const vatAmount = useMemo(() => {
         if (vatRate <= 0) return 0;
@@ -176,6 +179,21 @@ export default function Purchase({
         setDiscountDisplay(discount);
     };
 
+    const handleEvaAllowanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value.replace(/[^0-9.]/g, '');
+        setEvaAllowance(raw);
+        setEvaAllowanceDisplay(raw);
+    };
+
+    const handleEvaAllowanceBlur = () => {
+        const val = parseFloat(evaAllowance) || 0;
+        setEvaAllowanceDisplay(val > 0 ? fmt(val) : '');
+    };
+
+    const handleEvaAllowanceFocus = () => {
+        setEvaAllowanceDisplay(evaAllowance);
+    };
+
     const resetForm = () => {
         setTaxInvoiceNo('');
         setDate(new Date());
@@ -186,6 +204,8 @@ export default function Purchase({
         setUnitPrice('');
         setDiscount('');
         setDiscountDisplay('');
+        setEvaAllowance('');
+        setEvaAllowanceDisplay('');
     };
 
     const handleSubmit = async () => {
@@ -213,6 +233,7 @@ export default function Purchase({
                     unit_price: Math.round(parseFloat(unitPrice) * 100) / 100,
                     amount: Math.round(amount * 100) / 100,
                     discount: Math.round((parseFloat(discount) || 0) * 100) / 100,
+                    eva_allowance: Math.round((parseFloat(evaAllowance) || 0) * 100) / 100,
                     invoice_amount: Math.round(invoiceAmount * 100) / 100,
                     vat_percentage: Math.round(vatRate * 100) / 100,
                     vat_amount: Math.round(vatAmount * 100) / 100,
@@ -343,18 +364,28 @@ export default function Purchase({
                         </div>
 
                         {/* Discount */}
-                        <div className="md:col-span-2">
-                            <FloatingInput
-                                label="Discount (LKR)"
-                                type="text"
-                                inputMode="decimal"
-                                value={discountDisplay}
-                                onChange={handleDiscountChange}
-                                onFocus={handleDiscountFocus}
-                                onBlur={handleDiscountBlur}
-                                icon={<BadgeMinus className="h-4 w-4" />}
-                            />
-                        </div>
+                        <FloatingInput
+                            label="Discount (LKR)"
+                            type="text"
+                            inputMode="decimal"
+                            value={discountDisplay}
+                            onChange={handleDiscountChange}
+                            onFocus={handleDiscountFocus}
+                            onBlur={handleDiscountBlur}
+                            icon={<BadgeMinus className="h-4 w-4" />}
+                        />
+
+                        {/* EVA. Allowance */}
+                        <FloatingInput
+                            label="EVA. Allowance (LKR)"
+                            type="text"
+                            inputMode="decimal"
+                            value={evaAllowanceDisplay}
+                            onChange={handleEvaAllowanceChange}
+                            onFocus={handleEvaAllowanceFocus}
+                            onBlur={handleEvaAllowanceBlur}
+                            icon={<BadgeMinus className="h-4 w-4" />}
+                        />
                     </div>
 
                     {/* Action Buttons */}
@@ -425,6 +456,12 @@ export default function Purchase({
                                 <span className="text-muted-foreground">Discount</span>
                                 <span className="font-medium text-destructive">
                                     - LKR {fmt(parseFloat(discount) || 0)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">EVA. Allowance</span>
+                                <span className="font-medium text-destructive">
+                                    - LKR {fmt(parseFloat(evaAllowance) || 0)}
                                 </span>
                             </div>
 

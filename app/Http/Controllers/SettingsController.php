@@ -236,66 +236,57 @@ class SettingsController extends Controller
                 }
             }
 
-            // Find the latest fuel price record for this fuel_type_id where from_date <= new from_date
-            $latestFuelPrice = DB::table('fuel_price_history')
+            // Search for closest future from_date
+            $futureRecord = DB::table('fuel_price_history')
                 ->where('fuel_type_id', $fuelTypeId)
-                ->where('from_date', '<=', $fromDate)
+                ->where('from_date', '>', $fromDate)
+                ->orderBy('from_date', 'asc')
+                ->first();
+
+            // Search for closest past from_date
+            $pastRecord = DB::table('fuel_price_history')
+                ->where('fuel_type_id', $fuelTypeId)
+                ->where('from_date', '<', $fromDate)
                 ->orderBy('from_date', 'desc')
                 ->first();
 
-            if ($latestFuelPrice && $latestFuelPrice->fuel_price == $fuelPrice) {
-                DB::rollBack();
+            if (!$futureRecord) {
+                // No future dates: this is the newest price
+                if ($pastRecord) {
+                    DB::table('fuel_price_history')
+                        ->where('id', $pastRecord->id)
+                        ->update(['to_date' => date('Y-m-d', strtotime($fromDate . ' -1 day'))]);
+                }
+
+                DB::table('fuel_price_history')->insert([
+                    'fuel_type_id' => $fuelTypeId,
+                    'fuel_price' => $fuelPrice,
+                    'vat_percentage' => $vatPercentage,
+                    'from_date' => $fromDate,
+                    'to_date' => null,
+                ]);
 
                 $fuelType = FuelType::find($fuelTypeId);
-                $netPrice = $fuelType->price / (1 + ($vatPercentage / 100));
-                $vatAmount = $fuelType->price - $netPrice;
+                $fuelType->price = $fuelPrice;
+                $fuelType->save();
+            } else {
+                // Has future dates
+                if ($pastRecord) {
+                    DB::table('fuel_price_history')
+                        ->where('id', $pastRecord->id)
+                        ->update(['to_date' => date('Y-m-d', strtotime($fromDate . ' -1 day'))]);
+                }
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'No changes needed - Fuel price already set to this value',
-                    'fuelType' => [
-                        'id' => $fuelType->id,
-                        'name' => $fuelType->name,
-                        'price' => $fuelType->price,
-                        'netPrice' => $netPrice,
-                        'vatAmount' => $vatAmount,
-                    ],
+                DB::table('fuel_price_history')->insert([
+                    'fuel_type_id' => $fuelTypeId,
+                    'fuel_price' => $fuelPrice,
+                    'vat_percentage' => $vatPercentage,
+                    'from_date' => $fromDate,
+                    'to_date' => date('Y-m-d', strtotime($futureRecord->from_date . ' -1 day')),
                 ]);
+
+                $fuelType = FuelType::find($fuelTypeId);
             }
-
-            // Validate that new from_date is not earlier than the active record's from_date
-            $activeFuelPrice = DB::table('fuel_price_history')
-                ->where('fuel_type_id', $fuelTypeId)
-                ->whereNull('to_date')
-                ->first();
-
-            if ($activeFuelPrice && $fromDate < $activeFuelPrice->from_date) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot set an effective date earlier than the current active period',
-                ], 422);
-            }
-
-            // Close the previous active record for this fuel_type_id (set its to_date)
-            DB::table('fuel_price_history')
-                ->where('fuel_type_id', $fuelTypeId)
-                ->whereNull('to_date')
-                ->update(['to_date' => date('Y-m-d', strtotime($fromDate . ' -1 day'))]);
-
-            // Insert new record with to_date = NULL
-            DB::table('fuel_price_history')->insert([
-                'fuel_type_id' => $fuelTypeId,
-                'fuel_price' => $fuelPrice,
-                'vat_percentage' => $vatPercentage,
-                'from_date' => $fromDate,
-                'to_date' => null,
-            ]);
-
-            // Update fuel type price
-            $fuelType = FuelType::find($fuelTypeId);
-            $fuelType->price = $fuelPrice;
-            $fuelType->save();
 
             $netPrice = $fuelType->price / (1 + ($vatPercentage / 100));
             $vatAmount = $fuelType->price - $netPrice;
