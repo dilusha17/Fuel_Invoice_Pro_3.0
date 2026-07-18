@@ -148,7 +148,7 @@ export default function PurchaseSummary({ fuelCategories }: PageProps) {
                             Purchase Summary
                         </h1>
                         <p className="text-muted-foreground mt-1">
-                            View and print a summary of purchase records
+                            View & Print Purchase Summary
                         </p>
                     </div>
                 </div>

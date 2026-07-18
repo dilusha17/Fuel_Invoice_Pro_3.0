@@ -174,7 +174,7 @@ export default function ClientDetails({
 
             const data = await response.json();
 
-                if (data.success) {
+            if (data.success) {
                 const newClient: Client = {
                     id: String(data.client.id),
                     clientName: data.client.clientName,
@@ -260,7 +260,7 @@ export default function ClientDetails({
 
             const data = await response.json();
 
-                if (data.success) {
+            if (data.success) {
                 const updatedClient: Client = {
                     id: String(data.client.id),
                     clientName: data.client.clientName,
@@ -976,6 +976,10 @@ export default function ClientDetails({
                                 })
                             }
                         />
+                        <div className="bg-blue-500/10 rounded-lg p-3 text-xs text-blue-600 dark:text-blue-400">
+                            Please add short Nick Name for the client. Nick Name should include short name and number. Maximum 15 characters 
+                            (ex: if client name = Ceylon Biscuits Limited, then Nick Name can be "CBL01")
+                        </div>
                         <FloatingInput
                             label="Nick Name"
                             value={clientForm.nickName}
@@ -1157,6 +1161,10 @@ export default function ClientDetails({
                                 })
                             }
                         />
+                        <div className="bg-blue-500/10 rounded-lg p-3 text-xs text-blue-600 dark:text-blue-400">
+                            Please add short Nick Name for the client. Nick Name should include short name and number. Maximum 15 characters 
+                            (ex: if client name = Ceylon Biscuits Limited, then Nick Name can be "CBL01")
+                        </div>
                         <FloatingInput
                             label="Nick Name"
                             value={clientForm.nickName}

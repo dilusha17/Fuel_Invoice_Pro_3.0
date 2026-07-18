@@ -189,7 +189,7 @@ export default function InvoiceSummary({ clients, paymentMethods }: PageProps) {
                     Invoice Summary
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                    View and print summary of tax invoices
+                    View & Print Tax Invoice Summary
                 </p>
             </div>
 

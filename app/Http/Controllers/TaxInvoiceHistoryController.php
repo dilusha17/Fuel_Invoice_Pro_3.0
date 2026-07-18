@@ -444,23 +444,22 @@ class TaxInvoiceHistoryController extends Controller
 
         $taxInvoice = DB::table('tax_invoice')
             ->where('id', $request->tax_invoice_id)
-            ->select('id', 'tax_invoice_no', 'client_name')
+            ->select('id', 'tax_invoice_no')
             ->first();
 
         if (!$taxInvoice) {
             return response()->json(['success' => false, 'message' => 'Invoice not found.'], 404);
         }
 
+        $yearPrefix = substr($taxInvoice->tax_invoice_no, 0, 2);
+
         $allInvoices = DB::table('tax_invoice')
-            ->where('client_name', $taxInvoice->client_name)
+            ->where('tax_invoice_no', 'LIKE', $yearPrefix . '%')
             ->select('id', 'tax_invoice_no')
             ->get();
 
-        // Extract the last 5 digits from an invoice number string
         $lastFiveDigits = function (string $invoiceNo): int {
-            preg_match_all('/\d/', $invoiceNo, $matches);
-            $digits = implode('', $matches[0]);
-            return (int) substr($digits, -5);
+            return (int) substr($invoiceNo, -5);
         };
 
         $selectedValue = $lastFiveDigits($taxInvoice->tax_invoice_no);
@@ -502,16 +501,15 @@ class TaxInvoiceHistoryController extends Controller
             ], 404);
         }
 
-        // Verify this is still the last invoice using last-5-digits logic
+        $yearPrefix = substr($taxInvoice->tax_invoice_no, 0, 2);
+
         $allInvoices = DB::table('tax_invoice')
-            ->where('client_name', $taxInvoice->client_name)
+            ->where('tax_invoice_no', 'LIKE', $yearPrefix . '%')
             ->select('id', 'tax_invoice_no')
             ->get();
 
         $lastFiveDigits = function (string $invoiceNo): int {
-            preg_match_all('/\d/', $invoiceNo, $matches);
-            $digits = implode('', $matches[0]);
-            return (int) substr($digits, -5);
+            return (int) substr($invoiceNo, -5);
         };
 
         $selectedValue = $lastFiveDigits($taxInvoice->tax_invoice_no);
@@ -527,7 +525,7 @@ class TaxInvoiceHistoryController extends Controller
             return response()->json([
                 'success'  => false,
                 'is_last'  => false,
-                'message'  => 'This is not the last invoice for this client. Only the last invoice can be deleted.',
+                'message'  => 'This is not the last invoice. Only the last invoice can be deleted.',
             ], 422);
         }
 

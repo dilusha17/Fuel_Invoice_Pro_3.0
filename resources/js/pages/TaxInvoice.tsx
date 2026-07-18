@@ -100,13 +100,13 @@ export default function TaxInvoice() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.client]);
 
-    // Re-fetch tax invoice number when invoice date changes
+    // Re-fetch tax invoice number when invoice date or from date changes
     useEffect(() => {
         if (filters.client) {
             fetchNextTaxInvoiceNumber(filters.client);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [invoiceDate]);
+    }, [invoiceDate, filters.fromDate]);
 
     const fetchVehicles = async (clientId: string) => {
         setIsLoadingVehicles(true);
@@ -147,8 +147,9 @@ export default function TaxInvoice() {
 
     const fetchNextTaxInvoiceNumber = async (clientId: string) => {
         try {
+            const fromDateParam = filters.fromDate ? `&from_date=${formatDateLocal(filters.fromDate)}` : '';
             const response = await fetch(
-                `/api/invoice/next-tax-invoice-number/${clientId}?invoice_date=${formatDateLocal(invoiceDate)}`,
+                `/api/invoice/next-tax-invoice-number/${clientId}?invoice_date=${formatDateLocal(invoiceDate)}${fromDateParam}`,
             );
             const data = await response.json();
             if (data.success) {
@@ -453,7 +454,7 @@ export default function TaxInvoice() {
                     Tax Invoice
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                    Generate Tax Reports and Print Tax Invoices
+                    Generate & Print Tax Invoices
                 </p>
             </div>
 
@@ -474,7 +475,7 @@ export default function TaxInvoice() {
                         />
                     </div>
                     <SearchableSelect
-                        label="Vehicle No"
+                        label="Vehicle No or Containers"
                         options={vehicles}
                         value={filters.vehicle}
                         onChange={(value) =>

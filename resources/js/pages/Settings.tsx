@@ -699,7 +699,7 @@ export default function Settings({
                             Settings
                         </h1>
                         <p className="text-muted-foreground mt-1">
-                            Manage company profile, VAT, and fuel pricing
+                            Manage Company Profile, VAT percentage update, manage Fuel Pricing, Add Lubricants & manage Lubricants Pricing
                         </p>
                     </div>
                 </div>

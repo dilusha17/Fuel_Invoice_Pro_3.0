@@ -724,8 +724,8 @@ export default function ManageInvoices() {
                     </h1>
                     <p className="text-muted-foreground mt-1">
                         {showDeleted
-                            ? 'View and Recover Deleted Daily Invoices'
-                            : 'View, Edit and Delete Daily Invoices'}
+                            ? 'Recover Deleted Daily Invoices'
+                            : 'View, Edit and Delete Daily Invoices (records of past 45 days)'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">

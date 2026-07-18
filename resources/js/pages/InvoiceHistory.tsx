@@ -93,10 +93,13 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
     // Tab: 'active' | 'deleted'
     const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
 
-    const [filters, setFilters] = useState({
-        client: '',
-        year: '2026',
-        month: '01',
+    const [filters, setFilters] = useState(() => {
+        const now = new Date();
+        return {
+            client: '',
+            year: now.getFullYear().toString(),
+            month: String(now.getMonth() + 1).padStart(2, '0'),
+        };
     });
     const [availableInvoices, setAvailableInvoices] = useState<InvoiceOption[]>([]);
     const [selectedInvoice, setSelectedInvoice] = useState('');
@@ -583,7 +586,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                         Invoice History
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Access archived invoices and historical data
+                        Access & Manage archived Tax Invoices
                     </p>
                 </div>
             </div>

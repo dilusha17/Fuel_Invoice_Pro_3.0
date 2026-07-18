@@ -123,14 +123,21 @@ class TaxInvoiceController extends Controller
 
         $nickname = $client->nick_name ?? 'TAX';
         $invoiceDate = $request->input('invoice_date') ? Carbon::parse($request->input('invoice_date')) : Carbon::now();
-        $yearMonth = $invoiceDate->format('y') . strtoupper($invoiceDate->format('M'));
+        $fromDate = $request->input('from_date') ? Carbon::parse($request->input('from_date')) : $invoiceDate;
+        $currentYearPrefix = $fromDate->format('y');
+        $yearMonth = $currentYearPrefix . strtoupper($invoiceDate->format('M'));
         $prefix = $yearMonth . '_' . $nickname;
-        $latestInvoice = TaxInvoice::where('client_name', $client->client_name)
-            ->orderBy('id', 'DESC')
-            ->first();
+
+        $latestInvoice = TaxInvoice::orderBy('id', 'DESC')->first();
+
         if ($latestInvoice) {
-            $lastNumber = (int) substr($latestInvoice->tax_invoice_no, -5);
-            $nextNumber = $lastNumber + 1;
+            $latestYearPrefix = substr($latestInvoice->tax_invoice_no, 0, 2);
+            if ($latestYearPrefix !== $currentYearPrefix) {
+                $nextNumber = 1;
+            } else {
+                $lastNumber = (int) substr($latestInvoice->tax_invoice_no, -5);
+                $nextNumber = $lastNumber + 1;
+            }
         } else {
             $nextNumber = 1;
         }

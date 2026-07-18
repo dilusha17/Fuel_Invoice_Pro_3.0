@@ -382,7 +382,7 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                             placeholder="Select client"
                         />
                         <SearchableSelect
-                            label="Vehicle No"
+                            label="Vehicle No or Containers"
                             options={vehicles}
                             value={formData.vehicle}
                             onChange={(value) =>
@@ -396,7 +396,7 @@ export default function Index({ clients, initialVatPercentage }: IndexProps) {
                     {/* Fuel Type Selection */}
                     <div className="stagger-children">
                         <SearchableSelect
-                            label="Fuel Type"
+                            label="Fuel or Lubricants Type"
                             options={fuelTypes}
                             value={formData.fuelType}
                             onChange={(value) =>
