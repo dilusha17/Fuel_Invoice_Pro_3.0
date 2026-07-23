@@ -230,7 +230,7 @@ class TaxInvoiceController extends Controller
         $placeOfSupply = Settings::getPlaceOfSupply();
 
         // Convert Total to Words
-        $totalInWords = $this->convertNumberToWords((int) round($grandTotal)) . ' Rupees Only';
+        $totalInWords = $this->convertAmountToWords($grandTotal);
 
         // Get payment method label
         $paymentMethodId = (int) $request->payment_method;
@@ -344,6 +344,28 @@ class TaxInvoiceController extends Controller
         }
 
         return $best;
+    }
+
+    /**
+     * Convert an LKR amount (rupees + cents) to words
+     */
+    public function convertAmountToWords(float $amount): string
+    {
+        $rupees = (int) floor(round($amount, 2));
+        $cents = (int) round((round($amount, 2) - $rupees) * 100);
+
+        if ($cents >= 100) {
+            $rupees += 1;
+            $cents -= 100;
+        }
+
+        $words = $this->convertNumberToWords($rupees) . ' Rupees';
+
+        if ($cents > 0) {
+            $words .= ' and ' . $this->convertNumberToWords($cents) . ' Cents';
+        }
+
+        return $words . ' Only';
     }
 
     /**

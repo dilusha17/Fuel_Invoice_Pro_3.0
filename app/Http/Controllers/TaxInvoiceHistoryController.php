@@ -253,7 +253,7 @@ class TaxInvoiceHistoryController extends Controller
             $vatAmount = round($invoices->sum('vatAmount'), 2);
             $grandTotal = round($subtotal + $vatAmount, 2);
 
-            $totalInWords = $this->convertNumberToWords((int) round($grandTotal)) . ' Rupees Only';
+            $totalInWords = $this->convertAmountToWords($grandTotal);
 
             // Update the tax invoice record with new calculated values BEFORE generating PDF
             $updateData = [
@@ -369,6 +369,28 @@ class TaxInvoiceHistoryController extends Controller
         }
 
         return $best;
+    }
+
+    /**
+     * Convert an LKR amount (rupees + cents) to words
+     */
+    private function convertAmountToWords(float $amount): string
+    {
+        $rupees = (int) floor(round($amount, 2));
+        $cents = (int) round((round($amount, 2) - $rupees) * 100);
+
+        if ($cents >= 100) {
+            $rupees += 1;
+            $cents -= 100;
+        }
+
+        $words = $this->convertNumberToWords($rupees) . ' Rupees';
+
+        if ($cents > 0) {
+            $words .= ' and ' . $this->convertNumberToWords($cents) . ' Cents';
+        }
+
+        return $words . ' Only';
     }
 
     /**
