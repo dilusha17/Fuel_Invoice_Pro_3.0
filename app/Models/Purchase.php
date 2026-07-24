@@ -10,7 +10,7 @@ class Purchase extends Model
     protected $table = 'purchase';
 
     protected $fillable = [
-        'supplier_name',
+        'supplier_id',
         'tax_invoice_no',
         'date',
         'fuel_category_id',
@@ -39,6 +39,7 @@ class Purchase extends Model
         'net_amount' => 'double',
         'fuel_category_id' => 'integer',
         'fuel_type_id' => 'integer',
+        'supplier_id' => 'integer',
     ];
 
     public function fuelCategory(): BelongsTo
@@ -49,5 +50,10 @@ class Purchase extends Model
     public function fuelType(): BelongsTo
     {
         return $this->belongsTo(FuelType::class, 'fuel_type_id', 'id');
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 }

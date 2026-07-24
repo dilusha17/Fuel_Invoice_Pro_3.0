@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('purchase', function (Blueprint $table) {
             $table->id();
-            $table->string('supplier_name', 255)->nullable();
-            $table->string('tax_invoice_no', 100)->nullable();
+            $table->unsignedBigInteger('supplier_id');
+            $table->string('tax_invoice_no', 100);
             $table->date('date');
             $table->unsignedBigInteger('fuel_category_id');
             $table->unsignedBigInteger('fuel_type_id');
@@ -29,6 +29,7 @@ return new class extends Migration
             $table->double('net_amount', 15, 4)->default(0);
             $table->timestamps();
 
+            $table->foreign('supplier_id')->references('id')->on('supplier');
             $table->foreign('fuel_category_id')->references('id')->on('fuel_category');
             $table->foreign('fuel_type_id')->references('id')->on('fuel_type');
         });

@@ -37,43 +37,11 @@ class PurchaseSummaryController extends Controller
         $perPage  = 20;
         $offset   = ($page - 1) * $perPage;
 
-        $settings     = DB::table('settings')->first();
-        $tin          = substr($settings->supplier_vat_no ?? '', 0, 9);
-        $supplierName = $settings->supplier_name ?? '';
+        $query = $this->buildUnionQuery($fromDate, $toDate, $request->fuel_category_id);
 
-        $query = DB::table('purchase')
-            ->join('fuel_category', 'purchase.fuel_category_id', '=', 'fuel_category.id')
-            ->join('fuel_type', 'purchase.fuel_type_id', '=', 'fuel_type.id')
-            ->select(
-                'purchase.id',
-                'purchase.date',
-                'purchase.tax_invoice_no',
-                'fuel_type.name as fuel_type_name',
-                'purchase.discount',
-                'purchase.vat_percentage',
-                'purchase.vat_amount',
-                'purchase.net_amount'
-            )
-            ->whereBetween('purchase.date', [$fromDate->toDateString(), $toDate->toDateString()]);
-
-        if ($request->fuel_category_id) {
-            $query->where('purchase.fuel_category_id', $request->fuel_category_id);
-        }
-
-        // Totals — separate query with ONLY aggregate selects (avoids ONLY_FULL_GROUP_BY)
-        $totalsBaseQuery = DB::table('purchase')
-            ->join('fuel_category', 'purchase.fuel_category_id', '=', 'fuel_category.id')
-            ->join('fuel_type', 'purchase.fuel_type_id', '=', 'fuel_type.id')
-            ->whereBetween('purchase.date', [$fromDate->toDateString(), $toDate->toDateString()]);
-
-        if ($request->fuel_category_id) {
-            $totalsBaseQuery->where('purchase.fuel_category_id', $request->fuel_category_id);
-        }
-
-        $totalsRaw = $totalsBaseQuery->selectRaw(
-            'SUM(purchase.net_amount) as sum_net,
-             SUM(purchase.vat_amount) as sum_vat'
-        )->first();
+        $totalsRaw = DB::query()->fromSub($query, 'combined')
+            ->selectRaw('SUM(net_amount) as sum_net, SUM(vat_amount) as sum_vat')
+            ->first();
 
         $totals = [
             'sum_net'             => round((float) ($totalsRaw->sum_net ?? 0), 2),
@@ -81,22 +49,20 @@ class PurchaseSummaryController extends Controller
             'sum_disallowed_vat'  => 0.00,
         ];
 
-        $paginated = $query->orderBy('purchase.date')->paginate($perPage);
+        $paginated = $query->orderBy('date')->paginate($perPage, ['*'], 'page', $page);
 
-        $mapped = collect($paginated->items())->map(function ($row, $index) use ($offset, $tin, $supplierName) {
-            $disallowedVat = 0.00;
-
+        $mapped = collect($paginated->items())->map(function ($row, $index) use ($offset) {
             return [
                 'id'              => $row->id,
                 'serial_no'       => $offset + $index + 1,
                 'invoice_date'    => Carbon::parse($row->date)->format('m/d/Y'),
                 'tax_invoice_no'  => $row->tax_invoice_no ?? '',
-                'tin'             => $tin,
-                'supplier_name'   => $supplierName,
-                'description'     => $row->fuel_type_name . ' Fuel Purchase',
+                'tin'             => substr($row->supplier_vat_no ?? '', 0, 9),
+                'supplier_name'   => $row->supplier_name ?? '',
+                'description'     => $row->description,
                 'net_amount'      => round((float) $row->net_amount, 2),
                 'vat_amount'      => round((float) $row->vat_amount, 2),
-                'disallowed_vat'  => $disallowedVat,
+                'disallowed_vat'  => 0.00,
             ];
         });
 
@@ -112,6 +78,54 @@ class PurchaseSummaryController extends Controller
         ]);
     }
 
+    /**
+     * Build a unioned query of fuel purchases and lubricant purchases within a date range.
+     * When a fuel category filter is applied, lubricant purchases (which have no category) are excluded.
+     */
+    private function buildUnionQuery(Carbon $fromDate, Carbon $toDate, $fuelCategoryId = null)
+    {
+        $fuelQuery = DB::table('purchase')
+            ->join('fuel_type', 'purchase.fuel_type_id', '=', 'fuel_type.id')
+            ->leftJoin('supplier', 'purchase.supplier_id', '=', 'supplier.id')
+            ->whereBetween('purchase.date', [$fromDate->toDateString(), $toDate->toDateString()])
+            ->select(
+                'purchase.id',
+                'purchase.date',
+                'purchase.tax_invoice_no',
+                DB::raw("CONCAT(fuel_type.name, ' Fuel Purchase') as description"),
+                'purchase.net_amount',
+                'purchase.vat_amount',
+                'supplier.name as supplier_name',
+                'supplier.vat_no as supplier_vat_no'
+            );
+
+        if ($fuelCategoryId) {
+            $fuelQuery->where('purchase.fuel_category_id', $fuelCategoryId);
+        }
+
+        if ($fuelCategoryId) {
+            // A specific fuel category was requested; lubricant purchases don't belong to one.
+            return $fuelQuery;
+        }
+
+        $lubricantQuery = DB::table('lubricant_purchase')
+            ->leftJoin('supplier', 'lubricant_purchase.supplier_id', '=', 'supplier.id')
+            ->whereNull('lubricant_purchase.deleted_at')
+            ->whereBetween('lubricant_purchase.date', [$fromDate->toDateString(), $toDate->toDateString()])
+            ->select(
+                'lubricant_purchase.id',
+                'lubricant_purchase.date',
+                'lubricant_purchase.tax_invoice_no',
+                DB::raw("'Lubricant Purchases' as description"),
+                'lubricant_purchase.net_amount',
+                'lubricant_purchase.vat_amount',
+                'supplier.name as supplier_name',
+                'supplier.vat_no as supplier_vat_no'
+            );
+
+        return $fuelQuery->unionAll($lubricantQuery);
+    }
+
     public function exportCsv(Request $request): StreamedResponse
     {
         $request->validate([
@@ -123,33 +137,11 @@ class PurchaseSummaryController extends Controller
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
         $toDate   = Carbon::parse($request->to_date)->endOfDay();
 
-        $settings     = DB::table('settings')->first();
-        $tin          = substr($settings->supplier_vat_no ?? '', 0, 9);
-        $supplierName = $settings->supplier_name ?? '';
-
-        $query = DB::table('purchase')
-            ->join('fuel_category', 'purchase.fuel_category_id', '=', 'fuel_category.id')
-            ->join('fuel_type', 'purchase.fuel_type_id', '=', 'fuel_type.id')
-            ->select(
-                'purchase.date',
-                'purchase.tax_invoice_no',
-                'fuel_type.name as fuel_type_name',
-                'purchase.discount',
-                'purchase.vat_percentage',
-                'purchase.vat_amount',
-                'purchase.net_amount'
-            )
-            ->whereBetween('purchase.date', [$fromDate->toDateString(), $toDate->toDateString()])
-            ->orderBy('purchase.date');
-
-        if ($request->fuel_category_id) {
-            $query->where('purchase.fuel_category_id', $request->fuel_category_id);
-        }
-
-        $records  = $query->get();
+        $query = $this->buildUnionQuery($fromDate, $toDate, $request->fuel_category_id);
+        $records  = $query->orderBy('date')->get();
         $filename = 'purchase-summary-' . $fromDate->format('m-d-Y') . '-to-' . $toDate->format('m-d-Y') . '.csv';
 
-        return new StreamedResponse(function () use ($records, $tin, $supplierName, $filename) {
+        return new StreamedResponse(function () use ($records, $filename) {
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, [
@@ -182,9 +174,9 @@ class PurchaseSummaryController extends Controller
                     $index + 1,
                     Carbon::parse($row->date)->format('m/d/Y'),
                     $row->tax_invoice_no ?? '',
-                    $tin,
-                    $supplierName,
-                    $row->fuel_type_name . ' Fuel Purchase',
+                    substr($row->supplier_vat_no ?? '', 0, 9),
+                    $row->supplier_name ?? '',
+                    $row->description,
                     $net,
                     $vat,
                     $disallowedVat,

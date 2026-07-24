@@ -19,6 +19,7 @@ import {
     Clock,
     Printer,
     ShoppingCart,
+    Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
@@ -39,6 +40,7 @@ const navItems = [
     { path: '/monthly-sale', label: 'Monthly Sale', icon: Banknote },
     { path: '/purchase', label: 'Purchase', icon: ShoppingCart },
     { path: '/purchase-summary', label: 'Purchase Summary', icon: BarChart2 },
+    { path: '/suppliers', label: 'Suppliers', icon: Truck },
     { path: '/vat-balance', label: 'VAT Balance', icon: Scale },
     { path: '/clients', label: 'Client Details', icon: Users },
     { path: '/settings', label: 'Settings', icon: Settings },

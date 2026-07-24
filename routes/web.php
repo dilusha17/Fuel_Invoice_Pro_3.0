@@ -16,6 +16,7 @@ use App\Http\Controllers\InvoiceSummaryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\LubricantController;
+use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -97,6 +98,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/clients', [ClientDetailsController::class, 'index'])->name('clients');
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
     Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase');
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers');
 });
 
 // API Routes (Protected by auth middleware)
@@ -134,6 +136,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/fuel-types/{category_id}', [PurchaseController::class, 'getFuelTypesByCategory'])->name('api.purchase.fuel-types');
         Route::get('/fuel-price/{fuel_type_id}', [PurchaseController::class, 'getFuelPrice'])->name('api.purchase.fuel-price');
         Route::post('/store', [PurchaseController::class, 'store'])->name('api.purchase.store');
+        Route::post('/store-lubricant', [PurchaseController::class, 'storeLubricantPurchase'])->name('api.purchase.store-lubricant');
+    });
+
+    // API Routes for Suppliers
+    Route::prefix('api/suppliers')->group(function () {
+        Route::get('/by-type', [SupplierController::class, 'getSuppliersByType'])->name('api.suppliers.by-type');
+        Route::post('/store', [SupplierController::class, 'store'])->name('api.suppliers.store');
+        Route::put('/update/{id}', [SupplierController::class, 'update'])->name('api.suppliers.update');
+        Route::delete('/delete/{id}', [SupplierController::class, 'destroy'])->name('api.suppliers.delete');
     });
 
     // API Routes for Invoice History (backward compatibility)
