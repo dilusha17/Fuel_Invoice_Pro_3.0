@@ -21,7 +21,6 @@ class SettingsSeeder extends Seeder
                 'company_contact' => '+94 11 234 5678',
                 'company_vat_no' => 'VAT123456789',
                 'place_of_supply' => 'Colombo',
-                'supplier_name' => 'CEYLON PETROLEUM CORPORATION',
             ]
         );
     }

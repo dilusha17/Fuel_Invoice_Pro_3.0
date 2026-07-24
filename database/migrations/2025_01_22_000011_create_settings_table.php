@@ -18,8 +18,6 @@ return new class extends Migration
             $table->string('company_contact', 45)->nullable();
             $table->string('company_vat_no', 45)->nullable();
             $table->string('place_of_supply', 255)->nullable();
-            $table->string('supplier_name', 255)->nullable();
-            $table->string('supplier_vat_no', 45)->nullable();
         });
     }
 
