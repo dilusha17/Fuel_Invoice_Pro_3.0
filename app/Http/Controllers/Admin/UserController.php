@@ -19,7 +19,14 @@ class UserController extends Controller
     {
         $users = User::select('id', 'name', 'user_type', 'expired_at', 'created_at')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'user_type' => $user->user_type,
+                'expired_at' => $user->expired_at?->format('Y-m-d'),
+                'created_at' => $user->created_at,
+            ]);
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
@@ -64,7 +71,14 @@ class UserController extends Controller
     public function edit(User $user)
     {
         return Inertia::render('Admin/Users/Edit', [
-            'user' => $user->only(['id', 'name', 'user_type', 'expired_at']),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'user_type' => $user->user_type,
+                // Plain calendar date — avoids Carbon's default UTC JSON
+                // serialization shifting this a day back in Asia/Colombo (+05:30).
+                'expired_at' => $user->expired_at?->format('Y-m-d'),
+            ],
         ]);
     }
 
@@ -121,7 +135,14 @@ class UserController extends Controller
     {
         $users = User::select('id', 'name', 'user_type', 'expired_at', 'created_at')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(fn(User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'user_type' => $user->user_type,
+                'expired_at' => $user->expired_at?->format('Y-m-d'),
+                'created_at' => $user->created_at,
+            ]);
 
         return response()->json(['users' => $users]);
     }

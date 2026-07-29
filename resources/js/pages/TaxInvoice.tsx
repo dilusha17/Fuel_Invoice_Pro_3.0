@@ -4,6 +4,7 @@ import { Search, Printer, FileX, Loader2 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import { DataGrid } from '@/components/ui/DataGrid';
+import { FuelBadge } from '@/components/ui/FuelBadge';
 import { useToast } from '@/hooks/use-toast';
 
 interface SelectOption {
@@ -380,9 +381,7 @@ export default function TaxInvoice() {
         {
             key: 'fuelType',
             header: 'Fuel',
-            render: (row: TaxRecord) => (
-                <span className="text-sm font-medium">{row.fuelType}</span>
-            ),
+            render: (row: TaxRecord) => <FuelBadge type={row.fuelType} />,
         },
         {
             key: 'unitPrice',

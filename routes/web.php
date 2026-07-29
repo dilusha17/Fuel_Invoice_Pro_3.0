@@ -38,8 +38,8 @@ Route::post('/login', function (Request $request) {
         ])->onlyInput('name');
     }
 
-    // Check if account has expired
-    if ($user->expired_at && now()->isAfter($user->expired_at)) {
+    // Check if account has expired (the user may log in through the entire expiry day)
+    if ($user->expired_at && now()->isAfter($user->expired_at->copy()->endOfDay())) {
         return back()->withErrors([
             'name' => 'Your User Account has expired. Please contact the support team',
         ])->onlyInput('name');

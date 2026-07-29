@@ -51,21 +51,41 @@ export default function Edit({ user }: Props) {
     const [showPassword, setShowPassword] = useState(false);
     const [extendOption, setExtendOption] = useState('');
 
+    // Parse a 'YYYY-MM-DD' string as a local-midnight Date (avoids the UTC
+    // parsing that `new Date('YYYY-MM-DD')` does, which shifts the date back
+    // a day in negative-UTC-offset timezones). Kept in local time because the
+    // date picker (date-fns + Calendar) below also renders using local time —
+    // as long as both ends agree, the calendar-day math never drifts,
+    // regardless of the viewing machine's own timezone setting.
+    const parseDateLocal = (dateStr: string): Date => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    };
+
+    const formatDateLocal = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const handleExtendExpiry = () => {
         if (!extendOption) return;
 
         const currentExpiry = data.expired_at
-            ? new Date(data.expired_at)
+            ? parseDateLocal(data.expired_at)
             : new Date();
 
         let daysToAdd = 0;
-        if (extendOption === '1') daysToAdd = 30;
+        if (extendOption === 'd1') daysToAdd = 1;
+        else if (extendOption === 'd3') daysToAdd = 3;
+        else if (extendOption === '1') daysToAdd = 30;
         else if (extendOption === '3') daysToAdd = 90;
         else if (extendOption === '12') daysToAdd = 365;
 
         const newDate = new Date(currentExpiry);
         newDate.setDate(newDate.getDate() + daysToAdd);
-        setData('expired_at', newDate.toISOString().split('T')[0]);
+        setData('expired_at', formatDateLocal(newDate));
         setExtendOption('');
     };
 
@@ -244,7 +264,7 @@ export default function Edit({ user }: Props) {
                                 </Label>
                                 <DatePickerField
                                     label="Expiry Date"
-                                    value={data.expired_at ? new Date(data.expired_at) : undefined}
+                                    value={data.expired_at ? parseDateLocal(data.expired_at) : undefined}
                                     onChange={() => {}}
                                     placeholder={data.expired_at ? undefined : 'No expiry date set'}
                                     disabled={true}
@@ -272,6 +292,8 @@ export default function Edit({ user }: Props) {
                                             <SelectValue placeholder="Select duration" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="d1">One Day</SelectItem>
+                                            <SelectItem value="d3">Three Days</SelectItem>
                                             <SelectItem value="1">01 Month</SelectItem>
                                             <SelectItem value="3">03 Months</SelectItem>
                                             <SelectItem value="12">01 Year</SelectItem>

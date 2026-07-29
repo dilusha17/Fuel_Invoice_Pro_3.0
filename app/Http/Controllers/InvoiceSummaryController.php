@@ -82,10 +82,13 @@ class InvoiceSummaryController extends Controller
             $purchaserName = $clientRecord ? ($clientRecord->c_name ?? $invoice->client_name) : $invoice->client_name;
 
             $firstDaily = $invoice->invoiceDailies->first();
-            $productName = $firstDaily ? $firstDaily->getProductName() : '';
             $isLubricant = $firstDaily && $firstDaily->lubricant_type_id !== null;
-            $description = trim($productName) !== '' && $productName !== 'N/A'
-                ? $productName . ($isLubricant ? ' Purchase' : ' Fuel Purchase')
+            $productName = $isLubricant && $firstDaily ? $firstDaily->getProductName() : '';
+            // A tax invoice may bundle multiple different fuel types, so fuel
+            // purchases are described generically; lubricant purchases keep
+            // the specific product name since each invoice covers one lubricant.
+            $description = $isLubricant && trim($productName) !== '' && $productName !== 'N/A'
+                ? $productName . ' Purchase'
                 : 'Fuel Purchase';
 
             return [
@@ -169,10 +172,10 @@ class InvoiceSummaryController extends Controller
                 $purchaserName = $clientRecord ? ($clientRecord->c_name ?? $invoice->client_name) : $invoice->client_name;
 
                 $firstDaily = $invoice->invoiceDailies->first();
-                $productName = $firstDaily ? $firstDaily->getProductName() : '';
                 $isLubricantItem = $firstDaily && $firstDaily->lubricant_type_id !== null;
-                $description = trim($productName) !== '' && $productName !== 'N/A'
-                    ? $productName . ($isLubricantItem ? ' Purchase' : ' Fuel Purchase')
+                $productName = $isLubricantItem && $firstDaily ? $firstDaily->getProductName() : '';
+                $description = $isLubricantItem && trim($productName) !== '' && $productName !== 'N/A'
+                    ? $productName . ' Purchase'
                     : 'Fuel Purchase';
 
                 $sumSubtotal += $invoice->subtotal;

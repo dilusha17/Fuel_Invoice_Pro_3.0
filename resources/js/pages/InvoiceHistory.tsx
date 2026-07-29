@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { Printer, FileX, Trash2, StickyNote, Search } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { DataGrid } from '@/components/ui/DataGrid';
-import { FuelBadge, FuelType } from '@/components/ui/FuelBadge';
+import { FuelBadge } from '@/components/ui/FuelBadge';
 import { useToast } from '@/hooks/use-toast';
 import {
     AlertDialog,
@@ -59,7 +59,7 @@ interface HistoryRecord {
     client: string;
     vehicle: string;
     date: string;
-    fuelType: FuelType;
+    fuelType: string;
     unitPrice: number;
     vatPercent: number;
     volume: number;

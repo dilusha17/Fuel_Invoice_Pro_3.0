@@ -43,7 +43,15 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user() ? $request->user()->only(['id', 'name', 'user_type', 'expired_at']) : null,
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'user_type' => $request->user()->user_type,
+                    // Sent as a plain calendar date (no time/timezone component) —
+                    // Carbon's default JSON serialization forces UTC, which would
+                    // shift this a day back in the app's +05:30 (Asia/Colombo) timezone.
+                    'expired_at' => $request->user()->expired_at?->format('Y-m-d'),
+                ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'csrf_token' => csrf_token(),

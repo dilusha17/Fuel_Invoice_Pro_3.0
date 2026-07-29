@@ -39,6 +39,21 @@ export default function Create() {
     const { toast } = useToast();
     const [showPassword, setShowPassword] = useState(false);
 
+    // Parse/format 'YYYY-MM-DD' using local calendar getters (avoids the UTC
+    // parsing that `new Date('YYYY-MM-DD')` / `toISOString()` do, which shifts
+    // the date by a day in negative-UTC-offset timezones).
+    const parseDateLocal = (dateStr: string): Date => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    };
+
+    const formatDateLocal = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
@@ -208,9 +223,9 @@ export default function Create() {
                                 </Label>
                                 <DatePickerField
                                     label="Expiry Date"
-                                    value={data.expired_at ? new Date(data.expired_at) : undefined}
+                                    value={data.expired_at ? parseDateLocal(data.expired_at) : undefined}
                                     onChange={(date) =>
-                                        setData('expired_at', date ? date.toISOString().split('T')[0] : '')
+                                        setData('expired_at', date ? formatDateLocal(date) : '')
                                     }
                                     placeholder="Select expiry date"
                                     disabled={processing}

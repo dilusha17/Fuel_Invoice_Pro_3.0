@@ -125,7 +125,7 @@ class TaxInvoiceHistoryController extends Controller
                 'client' => $record->client,
                 'vehicle' => $record->vehicle,
                 'date' => date('Y-m-d', strtotime($record->date)),
-                'fuelType' => $this->mapFuelType($record->fuelType),
+                'fuelType' => $record->fuelType,
                 'unitPrice' => round($record->unitPrice, 2),
                 'vatPercent' => (float) $record->vatPercent,
                 'volume' => round($record->volume, 3),
@@ -320,21 +320,6 @@ class TaxInvoiceHistoryController extends Controller
                 'message' => 'Failed to generate PDF: ' . $e->getMessage(),
             ], 500);
         }
-    }
-
-    /**
-     * Map fuel type names to display format
-     */
-    private function mapFuelType($fuelType)
-    {
-        $mapping = [
-            'Auto Diesel' => 'AD',
-            'Super Diesel' => 'SD',
-            'Petrol 92' => 'P92',
-            'Petrol 95' => 'P95',
-        ];
-
-        return $mapping[$fuelType] ?? $fuelType;
     }
 
     /**
