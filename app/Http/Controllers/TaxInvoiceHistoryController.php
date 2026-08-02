@@ -439,9 +439,10 @@ class TaxInvoiceHistoryController extends Controller
     }
 
     /**
-     * Check whether the given tax invoice is the last one for its client.
-     * "Last" is determined by comparing the trailing 5 numeric digits of
-     * each invoice number — the invoice with the highest value is the last.
+     * Check whether the given tax invoice is the single most recently
+     * created invoice system-wide. Invoice numbering is a global sequence
+     * (not per-client — see getNextTaxInvoiceNumber), so "last" is simply
+     * whichever row has the highest id, matching that same logic.
      */
     public function checkIsLastInvoice(Request $request)
     {
@@ -451,43 +452,24 @@ class TaxInvoiceHistoryController extends Controller
 
         $taxInvoice = DB::table('tax_invoice')
             ->where('id', $request->tax_invoice_id)
-            ->select('id', 'tax_invoice_no')
+            ->select('id')
             ->first();
 
         if (!$taxInvoice) {
             return response()->json(['success' => false, 'message' => 'Invoice not found.'], 404);
         }
 
-        $yearPrefix = substr($taxInvoice->tax_invoice_no, 0, 2);
-
-        $allInvoices = DB::table('tax_invoice')
-            ->where('tax_invoice_no', 'LIKE', $yearPrefix . '%')
-            ->select('id', 'tax_invoice_no')
-            ->get();
-
-        $lastFiveDigits = function (string $invoiceNo): int {
-            return (int) substr($invoiceNo, -5);
-        };
-
-        $selectedValue = $lastFiveDigits($taxInvoice->tax_invoice_no);
-
-        $maxValue = 0;
-        foreach ($allInvoices as $inv) {
-            $v = $lastFiveDigits((string) $inv->tax_invoice_no);
-            if ($v > $maxValue) {
-                $maxValue = $v;
-            }
-        }
+        $latestId = DB::table('tax_invoice')->max('id');
 
         return response()->json([
             'success' => true,
-            'is_last' => $selectedValue === $maxValue,
+            'is_last' => $taxInvoice->id === $latestId,
         ]);
     }
 
     /**
-     * Delete a tax invoice (only if it is the last one for the client).
-     * Records the deletion in deleted_tax_invoices.
+     * Delete a tax invoice (only if it is the single most recently created
+     * invoice system-wide). Records the deletion in deleted_tax_invoices.
      */
     public function deleteTaxInvoice(Request $request)
     {
@@ -508,27 +490,9 @@ class TaxInvoiceHistoryController extends Controller
             ], 404);
         }
 
-        $yearPrefix = substr($taxInvoice->tax_invoice_no, 0, 2);
+        $latestId = DB::table('tax_invoice')->max('id');
 
-        $allInvoices = DB::table('tax_invoice')
-            ->where('tax_invoice_no', 'LIKE', $yearPrefix . '%')
-            ->select('id', 'tax_invoice_no')
-            ->get();
-
-        $lastFiveDigits = function (string $invoiceNo): int {
-            return (int) substr($invoiceNo, -5);
-        };
-
-        $selectedValue = $lastFiveDigits($taxInvoice->tax_invoice_no);
-        $maxValue = 0;
-        foreach ($allInvoices as $inv) {
-            $v = $lastFiveDigits((string) $inv->tax_invoice_no);
-            if ($v > $maxValue) {
-                $maxValue = $v;
-            }
-        }
-
-        if ($selectedValue !== $maxValue) {
+        if ($taxInvoice->id !== $latestId) {
             return response()->json([
                 'success'  => false,
                 'is_last'  => false,
