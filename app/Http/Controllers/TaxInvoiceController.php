@@ -265,11 +265,30 @@ class TaxInvoiceController extends Controller
         // Check for duplicate tax invoice number before saving
         $existingInvoice = TaxInvoice::where('tax_invoice_no', $request->tax_invoice_number)->first();
         if ($existingInvoice) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tax invoice number already exists. Please refresh the page and try again.',
-                'should_refresh' => true,
-            ], 409);
+            $message = 'Tax invoice number already exists. Please refresh the page and try again.';
+
+            // The PDF is generated via a real <form> navigation (target=_blank) so
+            // the browser's native PDF viewer keeps the Content-Disposition
+            // filename on its own Download button. That means this error can no
+            // longer be inspected as a fetch() response — render a plain page
+            // instead of a bare JSON dump for whichever tab lands here.
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'should_refresh' => true,
+                ], 409);
+            }
+
+            return response(
+                '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Duplicate Invoice Number</title></head>'
+                . '<body style="font-family: Arial, sans-serif; text-align: center; padding: 4rem 2rem;">'
+                . '<h2>Duplicate Invoice Number</h2>'
+                . '<p>' . e($message) . '</p>'
+                . '<p>You can close this tab and try again from the Tax Invoice page.</p>'
+                . '</body></html>',
+                409
+            )->header('Content-Type', 'text/html');
         }
 
         // Save tax invoice to database using Eloquent
@@ -309,7 +328,7 @@ class TaxInvoiceController extends Controller
         $safeFilename = str_replace(['/', '\\'], '-', $request->tax_invoice_number);
 
         // Return PDF for inline viewing (opens in browser)
-        return $pdf->stream('Tax_Invoice_' . $safeFilename . '.pdf');
+        return $pdf->stream($safeFilename . '.pdf');
     }
 
     /**

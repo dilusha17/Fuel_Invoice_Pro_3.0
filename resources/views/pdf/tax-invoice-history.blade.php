@@ -3,11 +3,17 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Tax Invoice - {{ $taxInvoiceNumber }}</title>
+    <title>{{ $taxInvoiceNumber }}</title>
     <style>
         /* Global & Page Setup */
+        /* Bottom margin is enlarged to reserve dedicated space for the fixed
+           footer below. dompdf does not reserve space for position:fixed
+           elements automatically, so without this the footer draws on top
+           of flowing content whenever a page's content reaches near the
+           bottom margin (e.g. around 15 item rows, before the manual
+           20-row page break below triggers). */
         @page {
-            margin: 10mm;
+            margin: 10mm 10mm 22mm 10mm;
             size: A4;
         }
 
@@ -177,9 +183,12 @@
         }
 
         /* Footer */
+        /* bottom: -12mm shifts the footer down into the extra bottom margin
+           reserved above, so it renders at the same visual position as
+           before while flowing content now stops short of it. */
         .footer {
             position: fixed;
-            bottom: 0;
+            bottom: -12mm;
             left: 0;
             right: 0;
             font-size: 8pt;

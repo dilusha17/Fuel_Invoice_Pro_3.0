@@ -311,14 +311,34 @@ class TaxInvoiceHistoryController extends Controller
 
             // Sanitize filename by replacing invalid characters
             $safeFilename = str_replace(['/', '\\'], '-', $taxInvoice->tax_invoice_no);
-            return $pdf->stream('tax-invoice-' . $safeFilename . '.pdf');
+            return $pdf->stream($safeFilename . '.pdf');
         } catch (\Exception $e) {
             Log::error('PDF Generation Error: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate PDF: ' . $e->getMessage(),
-            ], 500);
+
+            $message = 'Failed to generate PDF: ' . $e->getMessage();
+
+            // The PDF is opened via a real <form> navigation (target=_blank) so
+            // the browser's native PDF viewer keeps the Content-Disposition
+            // filename on its own Download button, so this error can no longer
+            // be inspected as a fetch() response — render a plain page instead
+            // of a bare JSON dump for whichever tab lands here.
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 500);
+            }
+
+            return response(
+                '<!DOCTYPE html><html><head><meta charset="utf-8"><title>PDF Generation Failed</title></head>'
+                . '<body style="font-family: Arial, sans-serif; text-align: center; padding: 4rem 2rem;">'
+                . '<h2>Failed to Generate PDF</h2>'
+                . '<p>' . e($message) . '</p>'
+                . '<p>You can close this tab and try again from the Invoice History page.</p>'
+                . '</body></html>',
+                500
+            )->header('Content-Type', 'text/html');
         }
     }
 

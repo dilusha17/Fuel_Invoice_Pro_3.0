@@ -303,64 +303,48 @@ export default function TaxInvoice() {
             return;
         }
 
-        // First, check for duplicate invoice number via API
+        // Generate + open the PDF via a real <form> POST navigation instead of
+        // fetch()+blob. A blob: URL carries no filename or Content-Disposition
+        // header, so the browser's native PDF viewer has nothing to suggest a
+        // name from when the user clicks its own Download/Save button — it
+        // just guesses ("download.pdf"). A genuine navigation to the endpoint
+        // preserves the server's Content-Disposition header, so that same
+        // native Download button correctly names the file after the tax
+        // invoice number, while still opening in a new tab for preview/print.
         setIsGeneratingPDF(true);
         try {
-            const response = await fetch(
-                '/api/invoice/generate-tax-invoice-pdf',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': props.csrf_token,
-                    },
-                    body: JSON.stringify({
-                        client_id: filters.client,
-                        vehicle_id: filters.vehicle,
-                        from_date: formatDateLocal(filters.fromDate),
-                        to_date: formatDateLocal(filters.toDate),
-                        tax_invoice_number: taxInvoiceNumber,
-                        invoice_date: formatDateLocal(invoiceDate),
-                        payment_method: paymentMethod || '',
-                    }),
-                },
-            );
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/api/invoice/generate-tax-invoice-pdf';
+            form.target = '_blank';
 
-            // Check if response is JSON (error) or PDF (success)
-            const contentType = response.headers.get('content-type');
+            const fields: Record<string, string> = {
+                _token: props.csrf_token,
+                client_id: filters.client,
+                vehicle_id: filters.vehicle,
+                from_date: formatDateLocal(filters.fromDate),
+                to_date: formatDateLocal(filters.toDate),
+                tax_invoice_number: taxInvoiceNumber,
+                invoice_date: formatDateLocal(invoiceDate),
+                payment_method: paymentMethod || '',
+            };
 
-            if (contentType && contentType.includes('application/json')) {
-                // It's an error response
-                const data = await response.json();
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            });
 
-                if (data.should_refresh) {
-                    toast({
-                        title: 'Duplicate Invoice Number',
-                        description: data.message,
-                        variant: 'destructive',
-                    });
-                    // Refresh the page after showing the toast
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    toast({
-                        title: 'Error',
-                        description: data.message || 'Failed to generate PDF',
-                        variant: 'destructive',
-                    });
-                }
-            } else {
-                // It's a PDF, open it in new tab
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                window.open(url, '_blank');
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
 
-                toast({
-                    title: 'PDF Generated',
-                    description: 'Tax invoice PDF is opening in a new tab',
-                });
-            }
+            toast({
+                title: 'PDF Generated',
+                description: `Tax invoice ${taxInvoiceNumber} opened in a new tab`,
+            });
         } catch (error) {
             console.error('Error generating PDF:', error);
             toast({

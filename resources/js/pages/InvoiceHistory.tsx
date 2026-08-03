@@ -494,33 +494,36 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
         setIsGeneratingPdf(true);
 
         try {
-            const response = await fetch(
-                '/api/history/generate-tax-invoice-pdf',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': props.csrf_token,
-                    },
-                    body: JSON.stringify({
-                        tax_invoice_id: selectedInvoice,
-                        payment_method_id: paymentMethod || null,
-                    }),
-                },
-            );
+            // Generate + open the PDF via a real <form> POST navigation instead
+            // of fetch()+blob. A blob: URL carries no filename or
+            // Content-Disposition header, so the browser's native PDF viewer's
+            // own Download button has nothing to name the file from — it just
+            // guesses ("download.pdf"). A genuine navigation to the endpoint
+            // preserves the server's Content-Disposition header, so that same
+            // native Download button correctly names the file after the tax
+            // invoice number, while still opening in a new tab for preview/print.
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/api/history/generate-tax-invoice-pdf';
+            form.target = '_blank';
 
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                window.open(url, '_blank');
-                window.URL.revokeObjectURL(url);
-            } else {
-                toast({
-                    title: 'Error',
-                    description: 'Failed to generate PDF.',
-                    variant: 'destructive',
-                });
-            }
+            const fields: Record<string, string> = {
+                _token: props.csrf_token,
+                tax_invoice_id: String(selectedInvoice),
+                payment_method_id: paymentMethod || '',
+            };
+
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         } catch {
             toast({
                 title: 'Error',
