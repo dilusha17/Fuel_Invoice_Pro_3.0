@@ -330,7 +330,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                     'X-CSRF-TOKEN': props.csrf_token,
                 },
                 body: JSON.stringify({
-                    client_name: selectedClient.label,
+                    client_id: selectedClient.value,
                     year: filters.year,
                     month: filters.month,
                 }),

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('tax_invoice_no', 45)->nullable();
             $table->date('invoice_date')->nullable();
-            $table->string('client_name', 255)->nullable();
+            $table->unsignedBigInteger('client_id');
             $table->string('vehicle_no', 255)->nullable();
             $table->unsignedBigInteger('payment_method_id')->default(1);
             $table->date('from_date')->nullable();
@@ -26,6 +26,10 @@ return new class extends Migration
             $table->double('total_amount')->default(0);
             $table->timestamp('created_at')->nullable();
             $table->timestamp('updated_at')->nullable();
+
+            $table->foreign('client_id')
+                ->references('id')
+                ->on('client');
 
             $table->foreign('payment_method_id')
                 ->references('id')

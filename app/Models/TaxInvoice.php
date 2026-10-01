@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TaxInvoice extends Model
@@ -17,7 +18,7 @@ class TaxInvoice extends Model
     protected $fillable = [
         'tax_invoice_no',
         'invoice_date',
-        'client_name',
+        'client_id',
         'vehicle_no',
         'payment_method_id',
         'from_date',
@@ -47,6 +48,11 @@ class TaxInvoice extends Model
             'tax_invoice_id',
             'invoice_daily_id'
         );
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'client_id');
     }
 
     public function paymentMethod()

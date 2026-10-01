@@ -40,14 +40,11 @@ class InvoiceSummaryController extends Controller
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
         $toDate = Carbon::parse($request->to_date)->endOfDay();
 
-        $query = TaxInvoice::with(['invoiceDailies.fuelType', 'invoiceDailies.lubricantType'])
+        $query = TaxInvoice::with(['client', 'invoiceDailies.fuelType', 'invoiceDailies.lubricantType'])
             ->whereBetween('invoice_date', [$fromDate, $toDate]);
 
         if ($request->client_id) {
-            $client = Client::find($request->client_id);
-            if ($client) {
-                $query->where('client_name', $client->client_name);
-            }
+            $query->where('client_id', $request->client_id);
         }
 
         if ($request->payment_method_id) {
@@ -62,24 +59,19 @@ class InvoiceSummaryController extends Controller
             'sum_total' => $totalsQuery->sum('total_amount'),
         ];
 
-        $invoices = $query->orderBy('invoice_date', 'desc')
-                          ->orderBy('tax_invoice_no', 'desc')
+        $invoices = $query->orderByRaw('CAST(RIGHT(tax_invoice_no, 5) AS UNSIGNED) ASC')
+                          ->orderBy('id', 'asc')
                           ->paginate(20);
-
-        // Pre-load clients keyed by client_name for fast lookup
-        $clients = Client::whereNull('deleted_at')
-            ->get()
-            ->keyBy('client_name');
 
         // Track serial number across paginated results
         $offset = ($invoices->currentPage() - 1) * $invoices->perPage();
 
         // Transform the paginated items
-        $invoices->getCollection()->transform(function ($invoice, $index) use ($clients, $offset) {
-            $clientRecord = $clients->get($invoice->client_name);
+        $invoices->getCollection()->transform(function ($invoice, $index) use ($offset) {
+            $clientRecord = $invoice->client;
 
             $tin = $clientRecord ? substr($clientRecord->vat_no ?? '', 0, 9) : '';
-            $purchaserName = $clientRecord ? ($clientRecord->c_name ?? $invoice->client_name) : $invoice->client_name;
+            $purchaserName = $clientRecord ? ($clientRecord->c_name ?? '') : '';
 
             $firstDaily = $invoice->invoiceDailies->first();
             $isLubricant = $firstDaily && $firstDaily->lubricant_type_id !== null;
@@ -122,32 +114,24 @@ class InvoiceSummaryController extends Controller
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
         $toDate = Carbon::parse($request->to_date)->endOfDay();
 
-        $query = TaxInvoice::with(['invoiceDailies.fuelType', 'invoiceDailies.lubricantType'])
+        $query = TaxInvoice::with(['client', 'invoiceDailies.fuelType', 'invoiceDailies.lubricantType'])
             ->whereBetween('invoice_date', [$fromDate, $toDate]);
 
         if ($request->client_id) {
-            $client = Client::find($request->client_id);
-            if ($client) {
-                $query->where('client_name', $client->client_name);
-            }
+            $query->where('client_id', $request->client_id);
         }
 
         if ($request->payment_method_id) {
             $query->where('payment_method_id', $request->payment_method_id);
         }
 
-        $invoices = $query->orderBy('invoice_date', 'asc')
-                          ->orderBy('tax_invoice_no', 'asc')
+        $invoices = $query->orderByRaw('CAST(RIGHT(tax_invoice_no, 5) AS UNSIGNED) ASC')
+                          ->orderBy('id', 'asc')
                           ->get();
-
-        // Pre-load clients keyed by client_name for fast lookup
-        $clients = Client::whereNull('deleted_at')
-            ->get()
-            ->keyBy('client_name');
 
         $filename = 'invoice-summary-' . $fromDate->format('m-d-Y') . '-to-' . $toDate->format('m-d-Y') . '.csv';
 
-        return new StreamedResponse(function () use ($invoices, $clients) {
+        return new StreamedResponse(function () use ($invoices) {
             $handle = fopen('php://output', 'w');
 
             // CSV header row
@@ -166,10 +150,10 @@ class InvoiceSummaryController extends Controller
             $sumVat = 0;
 
             foreach ($invoices as $index => $invoice) {
-                $clientRecord = $clients->get($invoice->client_name);
+                $clientRecord = $invoice->client;
 
                 $tin = $clientRecord ? substr($clientRecord->vat_no ?? '', 0, 9) : '';
-                $purchaserName = $clientRecord ? ($clientRecord->c_name ?? $invoice->client_name) : $invoice->client_name;
+                $purchaserName = $clientRecord ? ($clientRecord->c_name ?? '') : '';
 
                 $firstDaily = $invoice->invoiceDailies->first();
                 $isLubricantItem = $firstDaily && $firstDaily->lubricant_type_id !== null;

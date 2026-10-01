@@ -295,7 +295,7 @@ class TaxInvoiceController extends Controller
         $taxInvoice = TaxInvoice::create([
             'tax_invoice_no' => $request->tax_invoice_number,
             'invoice_date' => $request->invoice_date,
-            'client_name' => $client->client_name ?? '',
+            'client_id' => $client->id,
             'vehicle_no' => $request->vehicle_id === 'all' ? 'All Vehicles' : ($invoices->first()->vehicle->vehicle_no ?? 'N/A'),
             'payment_method_id' => $paymentMethodId,
             'from_date' => $request->from_date,

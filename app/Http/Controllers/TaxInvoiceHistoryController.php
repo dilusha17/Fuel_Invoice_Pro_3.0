@@ -30,7 +30,7 @@ class TaxInvoiceHistoryController extends Controller
     public function getTaxInvoices(Request $request)
     {
         $request->validate([
-            'client_name' => 'required|string',
+            'client_id' => 'required|integer',
             'year' => 'required|string',
             'month' => 'required|string',
         ]);
@@ -39,13 +39,13 @@ class TaxInvoiceHistoryController extends Controller
         $endDate = date('Y-m-t', strtotime($startDate)); // Last day of the month
 
         $taxInvoices = DB::table('tax_invoice')
-            ->where('client_name', $request->client_name)
+            ->where('client_id', $request->client_id)
             ->whereBetween('invoice_date', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->select(
                 'id',
                 'tax_invoice_no',
                 'invoice_date',
-                'client_name',
+                'client_id',
                 'vehicle_no',
                 'from_date',
                 'to_date'
@@ -167,7 +167,7 @@ class TaxInvoiceHistoryController extends Controller
                     'id',
                     'tax_invoice_no',
                     'invoice_date',
-                    'client_name',
+                    'client_id',
                     'from_date',
                     'to_date',
                     'payment_method_id'
@@ -209,9 +209,9 @@ class TaxInvoiceHistoryController extends Controller
                 ->select('company_name', 'company_address', 'company_contact', 'company_vat_no', 'place_of_supply')
                 ->first();
 
-            // Get client company details (fix: match on client_name)
+            // Get client company details
             $clientCompany = DB::table('client')
-                ->where('client_name', $taxInvoice->client_name)
+                ->where('id', $taxInvoice->client_id)
                 ->whereNull('deleted_at')
                 ->select('c_name', 'address', 'vat_no', 'contact_number')
                 ->first();
@@ -500,7 +500,7 @@ class TaxInvoiceHistoryController extends Controller
 
         $taxInvoice = DB::table('tax_invoice')
             ->where('id', $request->tax_invoice_id)
-            ->select('id', 'tax_invoice_no', 'client_name')
+            ->select('id', 'tax_invoice_no', 'client_id')
             ->first();
 
         if (!$taxInvoice) {
@@ -522,10 +522,12 @@ class TaxInvoiceHistoryController extends Controller
 
         DB::beginTransaction();
         try {
+            $clientName = DB::table('client')->where('id', $taxInvoice->client_id)->value('client_name');
+
             // Archive to deleted_tax_invoices
             DeletedTaxInvoice::create([
                 'tax_invoice_no'    => $taxInvoice->tax_invoice_no,
-                'client_name'       => $taxInvoice->client_name,
+                'client_name'       => $clientName,
                 'reason_for_delete' => $request->reason_for_delete,
                 'deleted_at'        => now(),
             ]);
