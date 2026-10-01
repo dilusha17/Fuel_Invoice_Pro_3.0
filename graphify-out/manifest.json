@@ -120,14 +120,14 @@
     "semantic_hash": "cea7639fecb1833e359f95088eed72c4"
   },
   "app/Http/Controllers/TaxInvoiceController.php": {
-    "mtime": 1784827604.6703212,
-    "ast_hash": "d72aeb44a7af43dd7924fb9d9e4a0b36",
-    "semantic_hash": "d72aeb44a7af43dd7924fb9d9e4a0b36"
+    "mtime": 1785792458.1320617,
+    "ast_hash": "4a360c18709efac2e53b7bf33b68622a",
+    "semantic_hash": "4a360c18709efac2e53b7bf33b68622a"
   },
   "app/Http/Controllers/TaxInvoiceHistoryController.php": {
-    "mtime": 1785309568.0174682,
-    "ast_hash": "00e1c564abedfa08c88e27f79afbbdab",
-    "semantic_hash": "00e1c564abedfa08c88e27f79afbbdab"
+    "mtime": 1785792520.8469186,
+    "ast_hash": "65b3e457f3f679864ba842c8067a79ea",
+    "semantic_hash": "65b3e457f3f679864ba842c8067a79ea"
   },
   "app/Http/Controllers/VatBalanceController.php": {
     "mtime": 1777236078.235352,
@@ -875,9 +875,9 @@
     "semantic_hash": "d5bf0e016ed78828e9d0d8c5819c0f66"
   },
   "resources/js/pages/InvoiceHistory.tsx": {
-    "mtime": 1785309543.4302208,
-    "ast_hash": "6035945630f687cc630cc4032e554e99",
-    "semantic_hash": "6035945630f687cc630cc4032e554e99"
+    "mtime": 1785792548.0415783,
+    "ast_hash": "b7ff783963af4b2531ce513e9b0c62ba",
+    "semantic_hash": "b7ff783963af4b2531ce513e9b0c62ba"
   },
   "resources/js/pages/InvoiceSummary.tsx": {
     "mtime": 1784411572.1938927,
@@ -925,9 +925,9 @@
     "semantic_hash": "cd7a9171e3fb992d4279e6b149159d17"
   },
   "resources/js/pages/TaxInvoice.tsx": {
-    "mtime": 1785317621.1991405,
-    "ast_hash": "8d40c9bdb96c82807662427c9d7ddd1a",
-    "semantic_hash": "8d40c9bdb96c82807662427c9d7ddd1a"
+    "mtime": 1785792489.8473096,
+    "ast_hash": "b767c8945d238b11a0dd603440fae59e",
+    "semantic_hash": "b767c8945d238b11a0dd603440fae59e"
   },
   "resources/js/pages/VatBalance.tsx": {
     "mtime": 1777242221.0394795,
@@ -960,14 +960,14 @@
     "semantic_hash": "598b252b7f6770148dc45a5f782e5521"
   },
   "resources/views/pdf/tax-invoice-history.blade.php": {
-    "mtime": 1783897506.9831963,
-    "ast_hash": "6bad290ec52a10f1b904923650e6497f",
-    "semantic_hash": "6bad290ec52a10f1b904923650e6497f"
+    "mtime": 1785791355.9894898,
+    "ast_hash": "a87fe5629f65b6478819a120d05c42c9",
+    "semantic_hash": "a87fe5629f65b6478819a120d05c42c9"
   },
   "resources/views/pdf/tax-invoice.blade.php": {
-    "mtime": 1783897506.9831963,
-    "ast_hash": "b1871eb93f30def9f2c0659edad7db62",
-    "semantic_hash": "b1871eb93f30def9f2c0659edad7db62"
+    "mtime": 1785791341.8659642,
+    "ast_hash": "2b1065b93eb5781ba4938c625412b4cb",
+    "semantic_hash": "2b1065b93eb5781ba4938c625412b4cb"
   },
   "resources/views/pdf/vat-balance.blade.php": {
     "mtime": 1777273685.6579368,

@@ -1,13 +1,13 @@
-# Graph Report - .  (2026-08-01)
+# Graph Report - .  (2026-09-18)
 
 ## Corpus Check
-- 218 files · ~75,462 words
+- 218 files · ~75,853 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
 - 1200 nodes · 2019 edges · 169 communities (96 shown, 73 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 118 edges (avg confidence: 0.8)
-- Token cost: 167,676 input · 0 output
+- Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
 - shadcn Card Component
@@ -271,7 +271,7 @@ Nodes (8): AuthCard(), AuthCardProps, AuthLayout(), AuthLayoutProps, FormData, L
 
 ### Community 27 - "Radix UI Dependencies"
 Cohesion: 0.15
-Nodes (13): class-variance-authority, dependencies, class-variance-authority, @radix-ui/react-aspect-ratio, @radix-ui/react-context-menu, @radix-ui/react-label, @radix-ui/react-navigation-menu, @radix-ui/react-select (+5 more)
+Nodes (13): clsx, dependencies, clsx, @radix-ui/react-aspect-ratio, @radix-ui/react-context-menu, @radix-ui/react-label, @radix-ui/react-navigation-menu, @radix-ui/react-select (+5 more)
 
 ### Community 28 - "shadcn Carousel Component"
 Cohesion: 0.15
@@ -283,7 +283,7 @@ Nodes (11): Menubar, MenubarCheckboxItem, MenubarContent, MenubarItem, MenubarLa
 
 ### Community 30 - "Lint & Format Tooling"
 Cohesion: 0.18
-Nodes (11): autoprefixer, eslint, devDependencies, autoprefixer, eslint, prettier, tailwindcss, @types/react-dom (+3 more)
+Nodes (11): eslint, @eslint/js, devDependencies, eslint, @eslint/js, prettier, tailwindcss, @types/react-dom (+3 more)
 
 ### Community 34 - "Supplier Controller"
 Cohesion: 0.33
@@ -361,7 +361,7 @@ Nodes (3): tailwindcss-animate, tailwindcss-animate, tailwindcss-animate
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `Radix UI Dependencies` to `Ziggy Routing Dependency`, `Zod Validation Dependency`, `Date Picker & Chart Hooks`, `Frontend Package Manifest`, `Tailwind Animate Plugin`, `clsx Dependency`, `cmdk Dependency`, `date-fns Dependency`, `Embla Carousel Dependency`, `React Hook Form Resolvers`, `Inertia React Dependency`, `Input OTP Dependency`, `Lucide Icons Dependency`, `Radix Accordion Dependency`, `Radix Alert Dialog Dependency`, `Radix Avatar Dependency`, `Radix Checkbox Dependency`, `Radix Collapsible Dependency`, `Radix Dialog Dependency`, `Radix Dropdown Menu Dependency`, `Radix Hover Card Dependency`, `Radix Menubar Dependency`, `Radix Popover Dependency`, `Radix Progress Dependency`, `Radix Radio Group Dependency`, `Radix Scroll Area Dependency`, `Radix Separator Dependency`, `Radix Slider Dependency`, `Radix Slot Dependency`, `Radix Switch Dependency`, `Radix Tabs Dependency`, `Radix Toast Dependency`, `Radix Toggle Dependency`, `Radix Toggle Group Dependency`, `Radix Tooltip Dependency`, `React Day Picker Dependency`, `React DOM Dependency`, `React Hook Form Dependency`, `React Resizable Panels`, `Recharts Dependency`, `Sonner Toast Dependency`, `Tailwind Merge Dependency`, `TanStack Query Dependency`, `Vaul Drawer Dependency`?**
+- **Why does `dependencies` connect `Radix UI Dependencies` to `Ziggy Routing Dependency`, `Zod Validation Dependency`, `Date Picker & Chart Hooks`, `Frontend Package Manifest`, `Tailwind Animate Plugin`, `cmdk Dependency`, `date-fns Dependency`, `Embla Carousel Dependency`, `ESLint Prettier Config Dependency`, `React Hook Form Resolvers`, `Inertia React Dependency`, `Input OTP Dependency`, `Lucide Icons Dependency`, `Radix Accordion Dependency`, `Radix Alert Dialog Dependency`, `Radix Avatar Dependency`, `Radix Checkbox Dependency`, `Radix Collapsible Dependency`, `Radix Dialog Dependency`, `Radix Dropdown Menu Dependency`, `Radix Hover Card Dependency`, `Radix Menubar Dependency`, `Radix Popover Dependency`, `Radix Progress Dependency`, `Radix Radio Group Dependency`, `Radix Scroll Area Dependency`, `Radix Separator Dependency`, `Radix Slider Dependency`, `Radix Slot Dependency`, `Radix Switch Dependency`, `Radix Tabs Dependency`, `Radix Toast Dependency`, `Radix Toggle Dependency`, `Radix Toggle Group Dependency`, `Radix Tooltip Dependency`, `React Day Picker Dependency`, `React DOM Dependency`, `React Hook Form Dependency`, `React Resizable Panels`, `Recharts Dependency`, `Sonner Toast Dependency`, `Tailwind Merge Dependency`, `TanStack Query Dependency`, `Vaul Drawer Dependency`?**
   _High betweenness centrality (0.116) - this node is a cross-community bridge._
 - **Why does `react` connect `Date Picker & Chart Hooks` to `shadcn Card Component`, `shadcn Sidebar Component`, `Cash Sale Page (Frontend)`, `DataGrid & Invoice History Table`, `Auth Card & Layout`, `Radix UI Dependencies`?**
   _High betweenness centrality (0.100) - this node is a cross-community bridge._
