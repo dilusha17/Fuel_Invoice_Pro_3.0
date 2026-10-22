@@ -522,12 +522,10 @@ class TaxInvoiceHistoryController extends Controller
 
         DB::beginTransaction();
         try {
-            $clientName = DB::table('client')->where('id', $taxInvoice->client_id)->value('client_name');
-
             // Archive to deleted_tax_invoices
             DeletedTaxInvoice::create([
                 'tax_invoice_no'    => $taxInvoice->tax_invoice_no,
-                'client_name'       => $clientName,
+                'client_id'         => $taxInvoice->client_id,
                 'reason_for_delete' => $request->reason_for_delete,
                 'deleted_at'        => now(),
             ]);
@@ -564,9 +562,16 @@ class TaxInvoiceHistoryController extends Controller
     public function getDeletedTaxInvoices()
     {
         $records = DB::table('deleted_tax_invoices')
-            ->select('id', 'tax_invoice_no', 'client_name', 'deleted_at', 'reason_for_delete')
-            ->where('deleted_at', '>=', now()->subDays(365))
-            ->orderBy('deleted_at', 'desc')
+            ->join('client', 'deleted_tax_invoices.client_id', '=', 'client.id')
+            ->select(
+                'deleted_tax_invoices.id',
+                'deleted_tax_invoices.tax_invoice_no',
+                'client.client_name',
+                'deleted_tax_invoices.deleted_at',
+                'deleted_tax_invoices.reason_for_delete'
+            )
+            ->where('deleted_tax_invoices.deleted_at', '>=', now()->subDays(365))
+            ->orderBy('deleted_tax_invoices.deleted_at', 'desc')
             ->get()
             ->map(function ($row) {
                 return [

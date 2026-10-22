@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::create('deleted_tax_invoices', function (Blueprint $table) {
             $table->id();
-            $table->string('tax_invoice_no', 45)->nullable();
-            $table->string('client_name', 255)->nullable();
+            $table->string('tax_invoice_no', 45);
+            $table->unsignedBigInteger('client_id');
             $table->string('reason_for_delete', 500);
-            $table->timestamp('deleted_at')->nullable();
+            $table->timestamp('deleted_at');
+
+            $table->foreign('client_id')
+                ->references('id')
+                ->on('client');
         });
     }
 

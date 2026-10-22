@@ -12,7 +12,7 @@ class DeletedTaxInvoice extends Model
 
     protected $fillable = [
         'tax_invoice_no',
-        'client_name',
+        'client_id',
         'reason_for_delete',
         'deleted_at',
     ];
