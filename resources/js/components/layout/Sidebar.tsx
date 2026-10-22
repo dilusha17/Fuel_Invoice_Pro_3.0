@@ -99,7 +99,7 @@ export function Sidebar() {
             {/* Mobile Overlay */}
             {mobileOpen && (
                 <div
-                    className="lg:hidden fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40"
+                    className="lg:hidden fixed inset-0 bg-foreground/20 backdrop-blur-xs z-40"
                     onClick={() => setMobileOpen(false)}
                 />
             )}
@@ -255,7 +255,7 @@ export function Sidebar() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-sidebar-accent transition-all duration-200 text-left">
-                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                                             <User className="h-4 w-4 text-primary" />
                                         </div>
                                         <div className="flex-1 min-w-0">

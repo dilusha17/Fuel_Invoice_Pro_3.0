@@ -12,7 +12,7 @@ export function Layout({ children }: LayoutProps) {
                 <div className="flex-1 p-4 lg:p-8 pt-16 lg:pt-8 pb-20">
                     {children}
                 </div>
-                <footer className="fixed bottom-0 left-0 right-0 lg:left-64 py-3 px-4 text-center text-xs text-muted-foreground bg-gradient-to-t from-background via-background to-transparent z-40">
+                <footer className="fixed bottom-0 left-0 right-0 lg:left-64 py-3 px-4 text-center text-xs text-muted-foreground bg-linear-to-t from-background via-background to-transparent z-40">
                     Developed by DE Creations (PVT) Ltd.
                 </footer>
             </main>

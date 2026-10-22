@@ -71,7 +71,7 @@ export function LoginForm() {
                         value={data.name}
                         onChange={handleNameChange}
                         className={cn(
-                            'w-full h-12 pl-11 pr-4 rounded-xl border border-border bg-background text-foreground text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all',
+                            'w-full h-12 pl-11 pr-4 rounded-xl border border-border bg-background text-foreground text-sm outline-hidden focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all',
                             errors.name &&
                                 'border-destructive focus:border-destructive focus:ring-destructive/20',
                         )}
@@ -101,7 +101,7 @@ export function LoginForm() {
                         value={data.password}
                         onChange={handlePasswordChange}
                         className={cn(
-                            'w-full h-12 pl-11 pr-12 rounded-xl border border-border bg-background text-foreground text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all',
+                            'w-full h-12 pl-11 pr-12 rounded-xl border border-border bg-background text-foreground text-sm outline-hidden focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all',
                             errors.password &&
                                 'border-destructive focus:border-destructive focus:ring-destructive/20',
                         )}
@@ -112,7 +112,7 @@ export function LoginForm() {
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-hidden"
                         tabIndex={-1}
                     >
                         {showPassword ? (

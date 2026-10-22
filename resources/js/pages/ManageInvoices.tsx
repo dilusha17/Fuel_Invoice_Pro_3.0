@@ -760,7 +760,7 @@ export default function ManageInvoices() {
                     <input
                         type="text"
                         placeholder="Search by serial no, client, or vehicle..."
-                        className="w-full pl-12 pr-4 py-3 bg-secondary/50 border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                        className="w-full pl-12 pr-4 py-3 bg-secondary/50 border border-border rounded-xl text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -825,7 +825,7 @@ export default function ManageInvoices() {
                                             onClick={() =>
                                                 handlePageChange(page)
                                             }
-                                            className={`min-w-[2.5rem] h-10 px-3 rounded-lg transition-colors ${page === pagination.current_page
+                                            className={`min-w-10 h-10 px-3 rounded-lg transition-colors ${page === pagination.current_page
                                                 ? 'bg-primary text-primary-foreground'
                                                 : 'border border-border hover:bg-secondary'
                                                 }`}

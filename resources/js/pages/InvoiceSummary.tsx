@@ -341,7 +341,7 @@ export default function InvoiceSummary({ clients, paymentMethods }: PageProps) {
                                                         <button
                                                             key={page}
                                                             onClick={() => handlePageChange(page)}
-                                                            className={`min-w-[2.5rem] h-10 px-3 rounded-lg transition-colors ${
+                                                            className={`min-w-10 h-10 px-3 rounded-lg transition-colors ${
                                                                 page === pagination.current_page
                                                                     ? 'bg-primary text-primary-foreground'
                                                                     : 'border border-border hover:bg-secondary'

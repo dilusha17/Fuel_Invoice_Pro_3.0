@@ -585,7 +585,7 @@ export default function TaxInvoice() {
                                                                         page,
                                                                     )
                                                                 }
-                                                                className={`min-w-[2.5rem] h-10 px-3 rounded-lg transition-colors ${
+                                                                className={`min-w-10 h-10 px-3 rounded-lg transition-colors ${
                                                                     page ===
                                                                     pagination.current_page
                                                                         ? 'bg-primary text-primary-foreground'

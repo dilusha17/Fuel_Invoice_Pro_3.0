@@ -773,7 +773,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                                                         <button
                                                             key={page}
                                                             onClick={() => handlePageChange(page)}
-                                                            className={`min-w-[2.5rem] h-10 px-3 rounded-lg transition-colors ${
+                                                            className={`min-w-10 h-10 px-3 rounded-lg transition-colors ${
                                                                 page === pagination.current_page
                                                                     ? 'bg-primary text-primary-foreground'
                                                                     : 'border border-border hover:bg-secondary'
@@ -887,7 +887,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                             <input
                                 type="text"
                                 placeholder="Search by Invoice No or Client…"
-                                className="w-full pl-12 pr-4 py-3 bg-secondary/50 border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                                className="w-full pl-12 pr-4 py-3 bg-secondary/50 border border-border rounded-xl text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                                 value={deletedSearch}
                                 onChange={(e) => { setDeletedSearch(e.target.value); setDeletedPage(1); }}
                             />
@@ -974,7 +974,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                                             <button
                                                 key={page}
                                                 onClick={() => setDeletedPage(page)}
-                                                className={`min-w-[2.5rem] h-10 px-3 rounded-lg transition-colors ${
+                                                className={`min-w-10 h-10 px-3 rounded-lg transition-colors ${
                                                     page === deletedPage
                                                         ? 'bg-primary text-primary-foreground'
                                                         : 'border border-border hover:bg-secondary'
@@ -1006,7 +1006,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                            <div className="shrink-0 h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
                                 <Trash2 className="h-5 w-5 text-destructive" />
                             </div>
                             <AlertDialogTitle>Cannot Delete Invoice</AlertDialogTitle>
@@ -1034,7 +1034,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                            <div className="shrink-0 h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
                                 <Trash2 className="h-5 w-5 text-destructive" />
                             </div>
                             <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
@@ -1055,7 +1055,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                             maxLength={REASON_MAX_LENGTH}
                             rows={3}
                             placeholder="Enter reason for deletion…"
-                            className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                            className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/40 resize-none"
                         />
                         <p className={`text-xs text-right ${deleteReason.length >= REASON_MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`}>
                             {deleteReason.length}/{REASON_MAX_LENGTH}
@@ -1093,7 +1093,7 @@ export default function InvoiceHistory({ clients }: InvoiceHistoryProps) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                            <div className="shrink-0 h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                                 <StickyNote className="h-5 w-5 text-amber-600" />
                             </div>
                             <AlertDialogTitle>Reason for Deletion</AlertDialogTitle>
