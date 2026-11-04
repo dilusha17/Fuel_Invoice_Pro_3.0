@@ -15,9 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 
 const generateYears = () => {
     const currentYear = new Date().getFullYear();
+    const maxYear = Math.max(2030, currentYear);
     const years = [];
-    for (let i = 0; i < 6; i++) {
-        const year = currentYear - i;
+    for (let year = maxYear; year >= currentYear - 5; year--) {
         years.push({ value: year.toString(), label: year.toString() });
     }
     return years;
