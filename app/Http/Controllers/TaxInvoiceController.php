@@ -9,6 +9,7 @@ use App\Models\Settings;
 use App\Models\TaxInvoice;
 use App\Models\TaxInvoiceInvoiceNo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Inertia\Inertia;
@@ -123,24 +124,17 @@ class TaxInvoiceController extends Controller
 
         $nickname = $client->nick_name ?? 'TAX';
         $invoiceDate = $request->input('invoice_date') ? Carbon::parse($request->input('invoice_date')) : Carbon::now();
-        $fromDate = $request->input('from_date') ? Carbon::parse($request->input('from_date')) : $invoiceDate;
-        $currentYearPrefix = $fromDate->format('y');
+        $currentYearPrefix = $invoiceDate->format('y');
         $yearMonth = $currentYearPrefix . strtoupper($invoiceDate->format('M'));
         $prefix = $yearMonth . '_' . $nickname;
 
-        $latestInvoice = TaxInvoice::orderBy('id', 'DESC')->first();
-
-        if ($latestInvoice) {
-            $latestYearPrefix = substr($latestInvoice->tax_invoice_no, 0, 2);
-            if ($latestYearPrefix !== $currentYearPrefix) {
-                $nextNumber = 1;
-            } else {
-                $lastNumber = (int) substr($latestInvoice->tax_invoice_no, -5);
-                $nextNumber = $lastNumber + 1;
-            }
-        } else {
-            $nextNumber = 1;
-        }
+        // The serial is one global sequence that restarts at 00001 every
+        // January 1st: take the highest serial already used in the invoice
+        // date's year (independent of creation order, so back-dated invoices
+        // don't disturb the count).
+        $maxSerial = TaxInvoice::where('tax_invoice_no', 'like', $currentYearPrefix . '%')
+            ->max(DB::raw('CAST(RIGHT(tax_invoice_no, 5) AS UNSIGNED)'));
+        $nextNumber = ((int) $maxSerial) + 1;
         $formattedNumber = str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
         $taxInvoiceNumber = $prefix . '_' . $formattedNumber;
         return response()->json([
