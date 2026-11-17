@@ -45,10 +45,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/monthly-sale', [MonthlySaleController::class, 'index'])->name('monthly-sale');
     Route::get('/purchase-summary', [PurchaseSummaryController::class, 'index'])->name('purchase-summary');
     Route::get('/vat-balance', [VatBalanceController::class, 'index'])->name('vat-balance');
-    Route::get('/clients', [ClientDetailsController::class, 'index'])->name('clients');
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
     Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase');
-    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers');
 });
 
 // API Routes (Protected by auth middleware)
@@ -74,13 +71,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/generate-tax-invoice-pdf', [TaxInvoiceController::class, 'generateTaxInvoicePDF'])->name('api.invoice.generate-tax-pdf');
     });
 
-    // API Routes for Settings
-    Route::prefix('api/settings')->group(function () {
-        Route::post('/update-vat', [SettingsController::class, 'updateVat'])->name('api.settings.update-vat');
-        Route::post('/update-fuel-price', [SettingsController::class, 'updateFuelPrice'])->name('api.settings.update-fuel-price');
-        Route::post('/update-company', [SettingsController::class, 'updateCompany'])->name('api.settings.update-company');
-    });
-
     // API Routes for Purchase
     Route::prefix('api/purchase')->group(function () {
         Route::get('/fuel-types/{category_id}', [PurchaseController::class, 'getFuelTypesByCategory'])->name('api.purchase.fuel-types');
@@ -92,9 +82,6 @@ Route::middleware(['auth'])->group(function () {
     // API Routes for Suppliers
     Route::prefix('api/suppliers')->group(function () {
         Route::get('/by-type', [SupplierController::class, 'getSuppliersByType'])->name('api.suppliers.by-type');
-        Route::post('/store', [SupplierController::class, 'store'])->name('api.suppliers.store');
-        Route::put('/update/{id}', [SupplierController::class, 'update'])->name('api.suppliers.update');
-        Route::delete('/delete/{id}', [SupplierController::class, 'destroy'])->name('api.suppliers.delete');
     });
 
     // API Routes for Invoice History (backward compatibility)
@@ -156,16 +143,39 @@ Route::middleware(['auth'])->group(function () {
     // API Routes for Lubricants
     Route::prefix('api/lubricants')->group(function () {
         Route::get('/', [LubricantController::class, 'getLubricantTypes'])->name('api.lubricants.list');
+        Route::get('/price/{lubricant_type_id}', [LubricantController::class, 'getPrice'])->name('api.lubricants.price');
+    });
+
+    // Read-only vehicle lookup (management routes are admin-only, below)
+    Route::post('/api/clients/vehicles', [ClientDetailsController::class, 'getVehicles'])->name('api.clients.vehicles');
+});
+
+// Management Routes (Admin only: settings, clients/vehicles, suppliers, lubricants)
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/clients', [ClientDetailsController::class, 'index'])->name('clients');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers');
+
+    Route::prefix('api/settings')->group(function () {
+        Route::post('/update-vat', [SettingsController::class, 'updateVat'])->name('api.settings.update-vat');
+        Route::post('/update-fuel-price', [SettingsController::class, 'updateFuelPrice'])->name('api.settings.update-fuel-price');
+        Route::post('/update-company', [SettingsController::class, 'updateCompany'])->name('api.settings.update-company');
+    });
+
+    Route::prefix('api/suppliers')->group(function () {
+        Route::post('/store', [SupplierController::class, 'store'])->name('api.suppliers.store');
+        Route::put('/update/{id}', [SupplierController::class, 'update'])->name('api.suppliers.update');
+        Route::delete('/delete/{id}', [SupplierController::class, 'destroy'])->name('api.suppliers.delete');
+    });
+
+    Route::prefix('api/lubricants')->group(function () {
         Route::post('/store', [LubricantController::class, 'store'])->name('api.lubricants.store');
         Route::put('/update/{id}', [LubricantController::class, 'update'])->name('api.lubricants.update');
         Route::delete('/delete/{id}', [LubricantController::class, 'destroy'])->name('api.lubricants.delete');
-        Route::get('/price/{lubricant_type_id}', [LubricantController::class, 'getPrice'])->name('api.lubricants.price');
         Route::post('/update-price', [LubricantController::class, 'updatePrice'])->name('api.lubricants.update-price');
     });
 
-    // API Routes for Client Details
     Route::prefix('api/clients')->group(function () {
-        Route::post('/vehicles', [ClientDetailsController::class, 'getVehicles'])->name('api.clients.vehicles');
         Route::post('/store-client', [ClientDetailsController::class, 'storeClient'])->name('api.clients.store-client');
         Route::post('/store-vehicle', [ClientDetailsController::class, 'storeVehicle'])->name('api.clients.store-vehicle');
         Route::put('/update-client/{id}', [ClientDetailsController::class, 'updateClient'])->name('api.clients.update-client');
