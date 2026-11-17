@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,6 +33,11 @@ class AppServiceProvider extends ServiceProvider
         if (app()->isProduction()) {
             // Disable query logging in production for better performance
             DB::connection()->disableQueryLog();
+        }
+
+        // A production site must never run with debug output enabled
+        if (app()->isProduction() && config('app.debug')) {
+            Log::warning('APP_DEBUG is true in production; set APP_DEBUG=false in .env.');
         }
 
         // Optimize view compilation
