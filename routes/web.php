@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DailyInvoiceController;
 use App\Http\Controllers\ManageInvoiceController;
 use App\Http\Controllers\SettingsController;
@@ -22,60 +23,9 @@ use Illuminate\Support\Facades\Auth;
 
 // Authentication Routes
 Route::get('/login', fn () => Inertia::render('Login'))->name('login');
-Route::post('/login', function (Request $request) {
-    $credentials = $request->validate([
-        'name' => ['required', 'string'],
-        'password' => ['required', 'string'],
-    ]);
-
-    // Find the user first
-    $user = \App\Models\User::where('name', $credentials['name'])->first();
-
-    // Check if user exists
-    if (!$user) {
-        return back()->withErrors([
-            'name' => 'Invalid User Name',
-        ])->onlyInput('name');
-    }
-
-    // Check if account has expired (the user may log in through the entire expiry day)
-    if ($user->expired_at && now()->isAfter($user->expired_at->copy()->endOfDay())) {
-        return back()->withErrors([
-            'name' => 'Your User Account has expired. Please contact the support team',
-        ])->onlyInput('name');
-    }
-
-    // Check if remember token is expired (if exists)
-    if ($user->remember_token && $user->remember_token_expires_at) {
-        if (now()->isAfter($user->remember_token_expires_at)) {
-            // Clear expired remember token
-            $user->update([
-                'remember_token' => null,
-                'remember_token_expires_at' => null,
-            ]);
-        }
-    }
-
-    // Verify password
-    if (!\Illuminate\Support\Facades\Hash::check($credentials['password'], $user->password)) {
-        return back()->withErrors([
-            'password' => 'Password is Incorrect',
-        ])->onlyInput('name');
-    }
-
-    // Login the user
-    Auth::login($user, $request->boolean('remember'));
-    $request->session()->regenerate();
-
-    // If remember me is checked, set token expiration to 7 days
-    if ($request->boolean('remember')) {
-        $user->update([
-            'remember_token_expires_at' => now()->addDays(7),
-        ]);
-    }
-
-    return redirect()->intended(route('dashboard'));
-})->name('login.store');
+Route::post('/login', [LoginController::class, 'store'])
+    ->middleware('throttle:login')
+    ->name('login.store');
 
 Route::post('/logout', function (Request $request) {
     Auth::logout();
