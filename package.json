@@ -9,7 +9,8 @@
     "build:ssr": "vite build --ssr",
     "preview": "vite preview",
     "format": "prettier --write \"resources/**/*.{js,jsx,ts,tsx,css}\"",
-    "lint": "eslint resources/js --ext .js,.jsx,.ts,.tsx --max-warnings 0"
+    "lint": "eslint resources/js --ext .js,.jsx,.ts,.tsx --max-warnings 0",
+    "audit:prod": "npm audit --omit=dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
