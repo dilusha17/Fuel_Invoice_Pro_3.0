@@ -150,8 +150,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/clients/vehicles', [ClientDetailsController::class, 'getVehicles'])->name('api.clients.vehicles');
 });
 
-// Management Routes (Admin only: settings, clients/vehicles, suppliers, lubricants)
-Route::middleware(['auth', 'admin'])->group(function () {
+// Management Routes (any authenticated user: settings, clients/vehicles, suppliers, lubricants)
+// Only the /admin section below is restricted to admins.
+Route::middleware(['auth'])->group(function () {
     Route::get('/clients', [ClientDetailsController::class, 'index'])->name('clients');
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers');

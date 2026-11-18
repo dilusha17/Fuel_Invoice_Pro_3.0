@@ -10,31 +10,31 @@ class AccessControlTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** Management endpoints that only admins may call. */
+    /** The Admin section: the only area restricted to admins. */
     private const ADMIN_ONLY = [
-        ['get', '/settings'],
-        ['get', '/clients'],
-        ['get', '/suppliers'],
-        ['post', '/api/settings/update-vat'],
-        ['post', '/api/settings/update-fuel-price'],
-        ['post', '/api/settings/update-company'],
-        ['post', '/api/lubricants/store'],
-        ['put', '/api/lubricants/update/1'],
-        ['delete', '/api/lubricants/delete/1'],
-        ['post', '/api/lubricants/update-price'],
-        ['post', '/api/suppliers/store'],
-        ['put', '/api/suppliers/update/1'],
-        ['delete', '/api/suppliers/delete/1'],
-        ['post', '/api/clients/store-client'],
-        ['post', '/api/clients/store-vehicle'],
-        ['put', '/api/clients/update-client/1'],
-        ['put', '/api/clients/update-vehicle/1'],
-        ['delete', '/api/clients/delete-client/1'],
-        ['delete', '/api/clients/delete-vehicle/1'],
         ['get', '/admin/users'],
+        ['get', '/admin/users/create'],
+        ['post', '/admin/users'],
+        ['get', '/admin/api/users'],
     ];
 
-    public function test_normal_users_cannot_use_admin_only_endpoints(): void
+    /** Pages every signed-in account (admin or user) can open. */
+    private const ANY_SIGNED_IN_USER = [
+        '/dashboard',
+        '/manage',
+        '/tax-invoice',
+        '/history',
+        '/invoice-summary',
+        '/monthly-sale',
+        '/purchase',
+        '/purchase-summary',
+        '/vat-balance',
+        '/suppliers',
+        '/clients',
+        '/settings',
+    ];
+
+    public function test_normal_users_cannot_use_the_admin_section(): void
     {
         $user = User::factory()->create(['user_type' => 'user']);
 
@@ -43,7 +43,7 @@ class AccessControlTest extends TestCase
         }
     }
 
-    public function test_guests_are_not_allowed_on_admin_only_or_api_endpoints(): void
+    public function test_guests_are_not_allowed_on_admin_or_api_endpoints(): void
     {
         foreach (self::ADMIN_ONLY as [$method, $uri]) {
             $this->{$method}($uri)->assertRedirect(route('login'));
@@ -56,13 +56,15 @@ class AccessControlTest extends TestCase
     {
         $admin = User::factory()->create(['user_type' => 'admin']);
 
-        $this->actingAs($admin)->get('/settings')->assertSuccessful();
+        $this->actingAs($admin)->get('/admin/users')->assertSuccessful();
     }
 
-    public function test_normal_users_keep_day_to_day_access(): void
+    public function test_normal_users_can_open_every_page_except_admin(): void
     {
         $user = User::factory()->create(['user_type' => 'user']);
 
-        $this->actingAs($user)->get('/dashboard')->assertSuccessful();
+        foreach (self::ANY_SIGNED_IN_USER as $uri) {
+            $this->actingAs($user)->get($uri)->assertSuccessful();
+        }
     }
 }

@@ -40,10 +40,10 @@ const navItems = [
     { path: '/monthly-sale', label: 'Monthly Sale', icon: Banknote },
     { path: '/purchase', label: 'Purchase', icon: ShoppingCart },
     { path: '/purchase-summary', label: 'Purchase Summary', icon: BarChart2 },
-    { path: '/suppliers', adminOnly: true, label: 'Suppliers', icon: Truck },
+    { path: '/suppliers', label: 'Suppliers', icon: Truck },
     { path: '/vat-balance', label: 'VAT Balance', icon: Scale },
-    { path: '/clients', adminOnly: true, label: 'Client Details', icon: Users },
-    { path: '/settings', adminOnly: true, label: 'Settings', icon: Settings },
+    { path: '/clients', label: 'Client Details', icon: Users },
+    { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -128,7 +128,6 @@ export function Sidebar() {
                     {/* Navigation */}
                     <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                         {navItems
-                            .filter((item) => !item.adminOnly || isAdmin)
                             .map((item) => {
                             const isActive = page.url === item.path;
                             return (
