@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,6 +34,11 @@ class AppServiceProvider extends ServiceProvider
         if (app()->isProduction()) {
             // Disable query logging in production for better performance
             DB::connection()->disableQueryLog();
+        }
+
+        // Always generate https links (assets, redirects, route URLs)
+        if (config('app.force_https')) {
+            URL::forceHttps();
         }
 
         // A production site must never run with debug output enabled

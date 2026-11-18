@@ -18,14 +18,14 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
         $response->headers->remove('X-Powered-By');
 
-        if ($request->isSecure() && app()->isProduction()) {
+        if ($request->isSecure() && (app()->isProduction() || config('app.force_https'))) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
         // The Vite dev server (public/hot) needs inline scripts and websockets,
         // so the CSP only applies to the built application.
         if (! file_exists(public_path('hot'))) {
-            $response->headers->set('Content-Security-Policy', implode('; ', [
+            $response->headers->set('Content-Security-Policy', implode('; ', array_merge([
                 "default-src 'self'",
                 "script-src 'self'",
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -36,7 +36,7 @@ class SecurityHeaders
                 "base-uri 'self'",
                 "form-action 'self'",
                 "frame-ancestors 'self'",
-            ]));
+            ], config('app.force_https') ? ['upgrade-insecure-requests'] : [])));
         }
 
         return $response;
